@@ -1,0 +1,185 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+* {
+  /* font-family: "Open Sans", Helvetica, Arial, sans-serif; */
+  font-family: 'roboto', sans-serif, arial, open sans;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --font-default: 'roboto', sans-serif, arial, open sans;
+  /* --font-default: 'Lato', 'Helvetica Neue', Helvetica, Arial,sans-serif;     */
+  /* --font-default: "Open Sans", Helvetica, Arial, sans-serif; */
+
+
+  --primary-color: #2565AD;
+  --secondary-color: #00ACC1;
+  --btn-hover-color: #02A0B3;
+
+
+  --link-color: #00CEE8;
+  --off-white-color: #cbd5e1;
+  --sidebar-hover: #1F5DA2;
+
+  --white-color: #fff;
+  --black-color: #000;
+  --black-color-60: rgb(0 0 0 / 0.60);
+  --black-color-80: rgb(0 0 0 / 0.80);
+
+  --blue-dark-color: #2466eb;
+
+
+  --profile-bg: #174d7e;
+
+  --body-bg-color: #E2EDF9;
+  --body-bg-color2: #F7F8FC;
+  --text-green: #16A34A;
+  --text-red: #DC2626;
+
+
+  --border-color-15: rgb(0 0 0 / 0.15);
+  --border-color-10: rgb(0 0 0 / 0.10);
+
+
+
+  --gray-color: #666666;
+  --gray-light-color: #FAFAFA;
+  --gray-dark-color: #555555;
+
+  --blue-color: #284CE4;
+  --blue-color-06: rgba(40, 76, 228, 0.06);
+
+
+  /* --link-color: #4758AB; */
+
+
+  --red-color: #FF0000;
+  --red-color-06: rgba(255, 0, 0, 0.06);
+  --orange-red-color: #FF5151;
+  --red-light-color: #F38C8C;
+
+
+
+
+
+}
+
+
+html {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  scroll-behavior: smooth;
+  font-size: 16px;
+  margin: 0px;
+}
+
+*,
+*:before,
+*:after {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--body-bg-color);
+  font-family: var(--font-default);
+  font-size: 16px;
+  color: var(--black-color-80);
+  /* line-height: 1.5; */
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+img {
+  vertical-align: middle;
+}
+
+a,
+a:focus,
+a:active,
+a:visited {
+  text-decoration: none;
+  cursor: pointer;
+}
+
+a {
+  color: var(--secondary-color);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+
+button {
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+button:focus,
+input:focus,
+textarea:focus,
+select:focus,
+a:focus {
+  border-color: var(--blue-light);
+  outline: 0;
+  box-shadow: 0 0 0 .2rem rgba(0, 123, 255, .25);
+}
+
+input[type="text"],
+input[type="email"],
+select {
+  border: 0px solid;
+  border-color: transparent transparent rgb(191, 211, 197) transparent;
+  font-size: 16px;
+}
+
+/*---browser Scrollbar css beginning here */
+/* Works on Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: lightgray white;
+}
+
+/* Works on Chrome, Edge, and Safari */
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-moz-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+/* *::-webkit-scrollbar-track {
+    background: white;
+}
+
+*::-moz-scrollbar-track {
+    background: white;
+} */
+*::-webkit-scrollbar-thumb {
+  background-color: lightgray;
+  border-radius: 20px;
+  /* border: 3px solid white; */
+}
+
+*::-moz-scrollbar-thumb {
+  background-color: lightgray;
+  -moz-border-radius: 20px;
+  border-radius: 20px;
+  /* border: 3px solid white; */
+}
+
+/*---browser Scrollbar css end here */
+
+
+/* ------------------------------------- */
