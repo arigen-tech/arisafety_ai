@@ -3,6 +3,7 @@ import { Footer } from "./Footer"
 import { Header } from "./Header"
 import { SideBarMenu } from "./SideBarMenu"
 import { useState } from "react"
+import { Loading } from "./Loading"
 
 export const Layout = () => {
   const [showSideMenu, setShowSideMenu] = useState(false);
@@ -19,14 +20,13 @@ export const Layout = () => {
   }
 
   //close menu onclick on siteBackdrop function here
-  const closeAll = () => {
+  const showSiteBackdrop = () => {
     var isSideBar = document.getElementsByClassName('sideBar');
     if (isSideBar.length > 0) {
       setShowSideMenu(false);
       document.querySelector('.sideBar').classList.remove("show");
     }
   }
-
 
   if (navigation.state === "loading") return <Loading />
 
@@ -58,7 +58,7 @@ export const Layout = () => {
       </div>
 
 
-      {showSideMenu && <div className="siteBackdrop" onClick={closeAll}></div>}
+      {showSideMenu && <div className="siteBackdrop" onClick={showSiteBackdrop}></div>}
 
 
     </>
