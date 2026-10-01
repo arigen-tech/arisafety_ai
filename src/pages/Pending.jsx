@@ -39,10 +39,10 @@ const tableData = [
   }
 ]
 
-export const ObservationManagement = () => {
+export const Pending = () => {
   return (
     <>
-      <TitleBar title="Observation Details" />
+      <TitleBar title="Pending" />
 
       <div className="card">
         <div className="table-wrapper">

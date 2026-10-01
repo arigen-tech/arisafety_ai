@@ -8,7 +8,7 @@ export const Header = ({onShowSideMenu}) => {
         <div className="header-flex">
           <div className="itemsLeft">
             <button className="menuBtn" onClick={onShowSideMenu}><img src="images/icons/hamburger-icon.svg" alt="icon" /></button>
-            <h1>ARI-SAFE AI</h1>
+            <h1>AI Safety System</h1>
           </div>
 
           <div className="itemsRight">

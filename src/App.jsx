@@ -2,7 +2,10 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { LoginPage } from "./pages/LoginPage";
 import { Layout } from "./components/layout/Layout";
 import { Dashboard } from "./pages/Dashboard";
-import { ObservationManagement } from "./pages/ObservationManagement";
+import { Pending } from "./pages/Pending";
+import { Approved } from "./pages/Approved";
+import { Rejected } from "./pages/Rejected";
+import { Reports } from "./pages/Reports";
 import { ErrorPage } from "./pages/ErrorPage";
 
 const router = createBrowserRouter([
@@ -20,15 +23,22 @@ const router = createBrowserRouter([
         element: <Dashboard />,
       },
       {
-        path: "/observation-management",
-        element: <ObservationManagement />,
+        path: "/pending",
+        element: <Pending />,
       },
       {
-        // path: "/contact",
-        // element: <Contact />,
+        path: "/approved",
+        element: <Approved />,
       },
-      
-      
+      {
+        path: "/rejected",
+        element: <Rejected />,
+      },
+      {
+        path: "/reports",
+        element: <Reports />,
+      },
+
       {
         path: "*",
         element: <ErrorPage />,
