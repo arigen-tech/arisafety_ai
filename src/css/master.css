@@ -16,7 +16,7 @@
 
   --primary-color: #2565AD;
   --secondary-color: #00ACC1;
-  --btn-hover-color: #02A0B3;
+  --btn-hover-color: #017c8a;
 
 
   --link-color: #00CEE8;
@@ -43,6 +43,16 @@
   --border-color-10: rgb(0 0 0 / 0.10);
 
 
+  --pending-color: #cd8100;
+  --pending-gb: #FEF3C7;
+
+  --approved-color: #16a34a;
+  --approved-bg: #D1FAE5;
+
+  --rejected-color: #dc2626; 
+  --rejected-bg: #FEE2E2;
+
+
 
   --gray-color: #666666;
   --gray-light-color: #FAFAFA;
@@ -59,6 +69,7 @@
   --red-color-06: rgba(255, 0, 0, 0.06);
   --orange-red-color: #FF5151;
   --red-light-color: #F38C8C;
+  --green-light-color:#25CA62;
 
 
 

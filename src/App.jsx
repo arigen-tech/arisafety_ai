@@ -7,6 +7,8 @@ import { Approved } from "./pages/Approved";
 import { Rejected } from "./pages/Rejected";
 import { Reports } from "./pages/Reports";
 import { ErrorPage } from "./pages/ErrorPage";
+import { ObservationDetails } from "./pages/ObservationDetails";
+import { UsersRole } from "./pages/UsersRole";
 
 const router = createBrowserRouter([
   {
@@ -38,6 +40,15 @@ const router = createBrowserRouter([
         path: "/reports",
         element: <Reports />,
       },
+      {
+        path: "/observation-details",
+        element: <ObservationDetails />,
+      },
+      {
+        path: "/manage-userRole",
+        element: <UsersRole />,
+      },
+      
 
       {
         path: "*",
@@ -50,6 +61,7 @@ const router = createBrowserRouter([
 ]);
 
 
+// manage-userRole
 
 function App() {
   return (

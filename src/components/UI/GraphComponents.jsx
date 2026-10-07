@@ -22,7 +22,7 @@ export const GraphComponents = () => {
                 </div>
                 <div class="card">
                     <div class="titleBar">
-                        <span><img src="images/icons/chart-icon-2.svg" alt="icon" /></span>
+                        <span><img src="images/icons/chart-icon.svg" alt="icon" /></span>
                         <h3>Business Unit Comparison</h3>
                     </div>
                     <div class="chartContent">
@@ -40,7 +40,7 @@ export const GraphComponents = () => {
                 </div>
                 <div class="card">
                     <div class="titleBar">
-                        <span><img src="images/icons/chart-icon.svg" alt="icon" /></span>
+                        <span><img src="images/icons/chart-icon-2.svg" alt="icon" /></span>
                         <h3>Plant Observation Count</h3>
                     </div>
                     <div class="chartContent">
@@ -58,7 +58,7 @@ export const GraphComponents = () => {
                 </div>
                 <div class="card">
                     <div class="titleBar">
-                        <span><img src="images/icons/chart-icon.svg" alt="icon" /></span>
+                        <span><img src="images/icons/chart-icon-2.svg" alt="icon" /></span>
                         <h3>PPE Compliance</h3>
                     </div>
                     <div class="chartContent">

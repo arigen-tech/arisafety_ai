@@ -23,7 +23,7 @@ a:hover {
 .grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
+    gap: 15px;
 }
 
 .grid-col-1 {
@@ -49,6 +49,7 @@ a:hover {
 .grid-col-7 {
     grid-template-columns: repeat(7, 1fr);
 }
+
 /* .grid-col-8 {
     grid-template-columns: repeat(8, 1fr);
 } */
@@ -56,7 +57,8 @@ a:hover {
 .col-span-2 {
     grid-column: span 2;
 }
-.itemEnd{
+
+.itemEnd {
     align-self: flex-end;
 }
 
@@ -108,9 +110,22 @@ a:hover {
     color: var(--white-color);
 }
 
+.btn-rejected {
+    background: var(--rejected-bg);
+    color: var(--rejected-color);
+    border: solid 1px var(--rejected-color);
+    padding: 10px 20px;
+}
+
+.btn-rejected:hover {
+    background: var(--rejected-color);
+    color: var(--white-color);
+}
+
+
 .btn-gray {
     background: rgb(0 0 0 /0.20);
-    color: var(--black-color);
+    color: var(--black-color-80);
     padding: 10px 20px;
 }
 
@@ -130,6 +145,13 @@ a:hover {
 
 .w-100 {
     width: 100%;
+}
+
+.btnAdd {
+    display: flex;
+    align-content: center;
+    justify-content: center;
+    gap: 5px;
 }
 
 /* buttons end here */
@@ -838,6 +860,14 @@ h3 {
     margin: 0;
 }
 
+h4 {
+    font-size: 16px;
+    color: var(--black-color-80);
+    font-weight: 500;
+    padding: 0;
+    margin: 0;
+}
+
 p {
     font-size: 14px;
     color: var(--black-color-80);
@@ -871,6 +901,10 @@ p.small {
     align-items: center;
     gap: 12px;
     margin-bottom: 15px;
+
+    & .title-bar {
+        margin-bottom: 0;
+    }
 }
 
 
@@ -1063,42 +1097,6 @@ p.small {
 
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /* *****-----Form Group begnning-----******* */
 .form-group {
     margin: 0;
@@ -1144,6 +1142,11 @@ p.small {
         height: 20px;
     } */
 
+    & .searchIcon {
+        background: var(--white-color) url(../images/icons/search-icon2.svg) no-repeat right center;
+        padding-right: 38px;
+    }
+
     & select {
         background: var(--white-color) url(../images/icons/arrow-down-icon.svg) no-repeat right center;
         -webkit-appearance: none;
@@ -1163,11 +1166,6 @@ p.small {
         background-color: rgb(0 0 0/ 0.05);
     }
 
-    & input.searchIcon {
-        background: var(--white-color) url(../src/Assets/icons/searchIcon.svg) no-repeat right center;
-        padding-right: 38px;
-    }
-
     & .error-msg {
         font-size: 13px;
         color: #dc3545;
@@ -1179,12 +1177,14 @@ p.small {
 
     & input:disabled,
     & input[disabled],
+    & textarea:disabled,
+    & textarea[disabled],
     & select:disabled,
     & select[disabled] {
-        background-color: rgb(0 0 0/0.08);
+        background-color: rgb(0 0 0/0.06);
         /* pointer-events: none; */
         cursor: not-allowed;
-        opacity: 0.60;
+        opacity: 0.70;
     }
 
 }
@@ -1367,7 +1367,7 @@ p.small {
             background-color: #F1F3F9;
             font-size: 14px;
             color: var(--black-color-80);
-            font-weight: 600;
+            font-weight: 500;
             text-align: left;
             padding: 11px 12px;
             border-bottom: solid 2px rgba(0, 0, 0, 0.10);
@@ -1380,6 +1380,11 @@ p.small {
             font-size: 13px;
             color: var(--black-color-80);
             padding: 11px 12px;
+
+            & a {
+                color: var(--blue-dark-color);
+                text-decoration: underline;
+            }
         }
 
         & tbody tr:nth-child(odd) {
@@ -1400,7 +1405,66 @@ p.small {
             font-size: 14px;
             padding: 4px 30px 4px 8px;
         }
+
+        & .content {
+            margin: 0;
+
+            & p {
+                font-weight: 600;
+            }
+
+            & span {
+                font-size: 12px;
+                color: var(--black-color-60);
+            }
+        }
+
+        & .btnView {
+            text-decoration: none;
+            background: rgb(0 0 0 /0.06);
+            border-radius: 30px;
+            padding: 10px 15px;
+
+            & img {
+                margin-right: 5px;
+            }
+
+            &:hover {
+                background: rgb(0 0 0 /0.10);
+            }
+        }
+
+        & .btn-primary {
+            text-decoration: none;
+            color: var(--white-color);
+            border-radius: 30px;
+            padding: 10px 20px;
+
+            & img {
+                margin-right: 5px;
+            }
+        }
+
+        & .approved {
+            background-color: var(--approved-bg);
+            /* display: block; */
+            color: var(--approved-color);
+            padding: 6px 12px;
+            border-radius: 30px;
+        }
+
+        & .rejected {
+            background-color: var(--rejected-bg);
+            /* display: block; */
+            color: var(--rejected-color);
+            padding: 6px 12px;
+            border-radius: 30px;
+        }
     }
+
+    /* --pending-color: #cd8100;
+     --pending-gb: #FEF3C7; */
+
 
 
     & input,
@@ -1447,10 +1511,11 @@ p.small {
 
     & .btn-view {
         background: rgb(0 0 0 /0.06);
-        width: 32px;
-        height: 32px;
+        /* width: 32px;
+        height: 32px; */
+        font-size: 18px;
         border-radius: 30px;
-        padding: 5px;
+        padding: 7px;
         display: flex;
         justify-content: center;
         align-items: center;
@@ -1465,6 +1530,16 @@ p.small {
         } */
     }
 
+}
+
+.btnLock {
+    background: var(--orange-red-color) !important;
+    color: var(--white-color) !important;
+}
+
+.btnUnLock {
+    background: var(--green-light-color) !important;
+    color: var(--white-color) !important;
 }
 
 .errorPage {
@@ -1540,53 +1615,109 @@ p.small {
 }
 
 
+.titleInner {
+    margin-bottom: 15px;
 
+    & h3 {
+        margin-bottom: 5px;
+    }
 
+    & p {
+        font-size: 14px;
+        color: var(--black-color-60);
+    }
+}
 
+/**************************************/
+.siteBackdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 
+.popupModal {
+    background: var(--white-color);
+    border-radius: 8px;
+    max-width: 900px;
+    width: 95%;
+    max-height: 80vh;
+    overflow: auto;
+    position: relative;
+    display: flex;
+    flex-direction: column;
 
+    & .modalHeader {
+        position: relative;
+        display: flex;
+        justify-content: space-between;
+        padding: 16px 15px;
+        border-bottom: solid 1px rgb(0 0 0/0.15);
 
+        & h2 {
+            font-size: 16px;
+            color: var(--black-color-80);
+            margin: 0;
+        }
 
+        & button {
+            background: rgb(0 0 0/ 0.08);
+            position: absolute;
+            top: 8px;
+            right: 15px;
+            cursor: pointer;
+            border: none;
+            border-radius: 30px;
+            padding: 5px;
+            transition: fill 0.35s ease;
 
+            &:hover {
+                background: rgb(0 0 0/ 0.15);
+            }
+        }
+    }
 
+    & .modalBody {
+        padding: 15px;
+        flex: 1;
+    }
 
+    & .modalFooter {
+        display: flex;
+        justify-content: flex-end;
+        border-top: solid 1px rgb(0 0 0/0.15);
+        padding: 12px 15px;
+        gap: 15px;
+    }
+}
 
+.ms-model {
+    max-width: 450px;
+}
 
+/***********************************/
+.checkMark {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 15px;
 
+    & img {
+        width: 100px;
+        height: auto;
+    }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    & p {
+        font-size: 16px;
+        margin-bottom: 20px;
+    }
+}
 
 
 
@@ -1609,37 +1740,13 @@ p.small {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 .d-grid {
     display: grid;
 }
 
 .d-flex {
     display: flex;
-    gap: 10px;
+    gap: 15px;
 }
 
 .items-center {
