@@ -74,7 +74,7 @@ export const Pending = () => {
                     <td>{priority}</td>
                     <td>{reportedBy}</td>
                     <td>{date} - {time}</td>
-                    <td>{status}</td>
+                    <td><span className="pending">{status}</span></td>
                     <td><div className="items-center"><Link to={url} className="btn- btn-view" title="View"><MdRemoveRedEye /></Link></div></td>
                   </tr>
                 )

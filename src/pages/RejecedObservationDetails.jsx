@@ -1,35 +1,14 @@
-import React, { useState } from 'react'
 import { TitleBar } from '../components/UI/TitleBar'
 import { Link, useNavigate } from 'react-router-dom'
 
-export const ObservationDetails = () => {
-    const [aISuggestions, setAISuggestions] = useState(false);
-    const [formSubmit, setFormSubmit] = useState(false);
-    const [formReject, setFormReject] = useState(false);
-
-    const navigate = useNavigate();
-
-    const handleFormSubmit = () => {
-        setFormSubmit(true);
-    }
-    const handleFormClose = () => {
-        setFormSubmit(false);
-    }
-
-    const handleFormRejection = () => {
-        setFormReject(true);
-    }
-    const handleFormRejectionClose = () => {
-        setFormReject(false);
-    }
-
-
+export const RejecedObservationDetails = () => {
+      const navigate = useNavigate();
 
     return (
         <>
             <div className='title-bar'>
                 <button type='button' className="btnBack" onClick={() => navigate(-1)}></button>
-                <TitleBar title="Observation Details" />
+                <TitleBar title="Rejected Observation" />
             </div>
 
             <div className="card mb-20">
@@ -70,12 +49,10 @@ export const ObservationDetails = () => {
                         <label>Observation Date & Time</label>
                         <input type="text" placeholder="" value="27-Sep-2026 - 10:35am" disabled />
                     </div>
-
                     <div className="form-group">
                         <label>Reported By</label>
                         <input type="text" placeholder="" value="Team Lead " disabled />
                     </div>
-
                     <div className="form-group">
                         <label>Description </label>
                         <textarea disabled>Water accumulation near electrical panel</textarea>
@@ -251,62 +228,22 @@ export const ObservationDetails = () => {
                             <option value="0">Low</option>
                         </select>
                     </div>
-                    <div className="btn-group itemEnd">
-                        <button type="button" className="btn btn-primary" onClick={() => setAISuggestions(!aISuggestions)}>CAPA Recommendation</button>
-                    </div>
                 </div>
-                {aISuggestions && <div className="grid grid-col-2 mb-15">
+                <div className="grid grid-col-2 mb-15">
                     <div className="form-group">
                         <label>AI Suggestions</label>
                         <textarea></textarea>
                     </div>
-                </div>}
+                </div>
             </div>
    
             <div className="d-flex">
-                <button type="button" className="btn btn-primary" onClick={handleFormSubmit}>Submit</button>
-                <button type="button" className="btn btn-rejected" onClick={handleFormRejection}>Reject</button>
+                <button type="button" className="btn btn-gray" onClick={() => navigate(-1)}>Back</button>
             </div>
-
-
-
-            {formSubmit && <div className="modalBackdrop">
-                <div className="popupModal ms-model">
-                    <div className="modalBody">
-                        <div className='checkMark'>
-                            <img src="images/icons/check-mark-success-large.gif" alt="Check icon" />
-                            <p className='text-center'>Observation successfully Assigned.</p>
-                            <button className='btn btn-primary' onClick={handleFormClose}>OK</button>
-                        </div>
-                    </div>
-                </div>
-            </div>}
-
-            {formReject && <div className="modalBackdrop">
-                <div className="popupModal ms-model">
-                    <div className="modalHeader">
-                        <h2>Rejection</h2>
-                        <button type="button" title="Close" onClick={handleFormRejectionClose}>
-                            <img src="images/icons/cose-icon.svg" alt="Close icon" />
-                        </button>
-                    </div>
-
-                    <div className="modalBody">
-                        <div className="form-group">
-                            <label>Reason for Rejection</label>
-                            <textarea placeholder='Enter your rejection...'></textarea>
-                        </div>
-                    </div>
-
-                    <div className="modalFooter">
-                        <button className='btn btn-gray' onClick={handleFormRejectionClose}>Cancel</button>
-                        <button className='btn btn-primary' onClick={handleFormRejectionClose}>Submit</button>
-                    </div>
-
-                </div>
-            </div>}
 
 
         </>
     )
 }
+
+

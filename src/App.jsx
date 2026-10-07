@@ -9,6 +9,9 @@ import { Reports } from "./pages/Reports";
 import { ErrorPage } from "./pages/ErrorPage";
 import { ObservationDetails } from "./pages/ObservationDetails";
 import { UsersRole } from "./pages/UsersRole";
+import { ApprovedObservationDetails } from "./pages/ApprovedObservationDetails";
+import { RejecedObservationDetails } from "./pages/RejecedObservationDetails";
+import { Profile } from "./pages/Profile";
 
 const router = createBrowserRouter([
   {
@@ -45,8 +48,20 @@ const router = createBrowserRouter([
         element: <ObservationDetails />,
       },
       {
+        path: "/approved-observation-details",
+        element: <ApprovedObservationDetails />,
+      },
+      {
+        path: "/rejected-observation-details",
+        element: <RejecedObservationDetails />,
+      },
+      {
         path: "/manage-userRole",
         element: <UsersRole />,
+      },
+      {
+        path: "/profile",
+        element: <Profile />,
       },
       
 
