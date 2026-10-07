@@ -1,4 +1,7 @@
 import React from 'react'
+import { FaRegUserCircle } from 'react-icons/fa'
+import { FaEarthAmericas } from 'react-icons/fa6'
+import { PiUserSwitchFill } from 'react-icons/pi'
 import { Link } from 'react-router-dom'
 
 export const Header = ({onShowSideMenu}) => {
@@ -12,6 +15,51 @@ export const Header = ({onShowSideMenu}) => {
           </div>
 
           <div className="itemsRight">
+            {/* Language */}
+            <div className="user-profile noLine">
+              <a href="javascript:void(0)">
+                <span className='icons'><FaEarthAmericas /></span>
+                <div className="user-info"><span>Language</span></div>
+              </a>
+              <div className="user-dropdown">
+                <div className="items">
+                  <Link to="javascript:void(0)">
+                    <span>&#x1F1EE;&#x1F1F3;</span>
+                    <span>Hindi</span>
+                  </Link>
+
+                  <Link>
+                    <span>&#x1F1FA;&#x1F1F8;</span>
+                    <span>English</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* User Role */}
+            <div className="user-profile">
+              <a href="javascript:void(0)">
+                <span className='icons'><PiUserSwitchFill /></span>
+                <div className="user-info"><span>Role</span></div>
+              </a>
+              <div className="user-dropdown">
+                <div className="items">
+                  <Link to="/pending-assigned-observation">
+                    <FaRegUserCircle />
+                    <span>Department</span>
+                  </Link>
+                  <Link to="/">
+                    <FaRegUserCircle />
+                    <span>Role Nmae here...</span>
+                  </Link>
+                  <Link to="/">
+                    <FaRegUserCircle />
+                    <span>Role Nmae here...</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+
             {/* Notification */}
             <div className="notification">
               <a href="javascript:void(0)">
@@ -28,7 +76,7 @@ export const Header = ({onShowSideMenu}) => {
               </a>
               <div className="user-dropdown">
                 <div className="items">
-                  <Link to="javascript:void(0)">
+                  <Link to="/profile">
                     <img src="images/icons/edit-icon.svg" alt="edit icon" /> <span>Edit
                       Profile</span>
                   </Link>

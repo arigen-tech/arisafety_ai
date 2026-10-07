@@ -9,6 +9,11 @@ import { Reports } from "./pages/Reports";
 import { ErrorPage } from "./pages/ErrorPage";
 import { ObservationDetails } from "./pages/ObservationDetails";
 import { UsersRole } from "./pages/UsersRole";
+import { ApprovedObservationDetails } from "./pages/ApprovedObservationDetails";
+import { RejecedObservationDetails } from "./pages/RejecedObservationDetails";
+import { Profile } from "./pages/Profile";
+import { AssignedObservation } from "./pages/AssignedObservation";
+import { PendingAssignedObservation } from "./pages/PendingAssignedObservation";
 
 const router = createBrowserRouter([
   {
@@ -45,9 +50,31 @@ const router = createBrowserRouter([
         element: <ObservationDetails />,
       },
       {
+        path: "/approved-observation-details",
+        element: <ApprovedObservationDetails />,
+      },
+      {
+        path: "/rejected-observation-details",
+        element: <RejecedObservationDetails />,
+      },
+      {
+        path: "/pending-assigned-observation",
+        element: <PendingAssignedObservation />,
+      },
+      {
+        path: "/assigned-observation",
+        element: <AssignedObservation />,
+      },
+      {
+        path: "/profile",
+        element: <Profile />,
+      },
+      {
         path: "/manage-userRole",
         element: <UsersRole />,
       },
+      
+
       
 
       {

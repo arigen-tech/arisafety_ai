@@ -1,12 +1,11 @@
-import React from 'react'
-import { TitleBar } from '../components/UI/TitleBar'
-import { MdRemoveRedEye } from 'react-icons/md'
-import { Link } from 'react-router-dom'
+import { MdRemoveRedEye } from 'react-icons/md';
+import { TitleBar } from '../components/UI/TitleBar';
+import { Link } from 'react-router-dom';
 
-export const Approved = () => {
+export const PendingAssignedObservation = () => {
     return (
         <>
-            <TitleBar title="Approved" />
+            <TitleBar title="Pending Assigned Observation" />
 
             <div className="card">
                 <div className="table-wrapper">
@@ -29,17 +28,8 @@ export const Approved = () => {
                                 <td>HIGH</td>
                                 <td>Team Lead</td>
                                 <td>06-10-26 - 12:15pm</td>
-                                <td><span className='approved'>Approved</span></td>
-                                <td><div className="items-center"><Link to="/approved-observation-details" className="btn-view" title="View"><MdRemoveRedEye /></Link></div></td>
-                            </tr>
-                            <tr>
-                                <td>SAF-000125</td>
-                                <td>Pune</td>
-                                <td>LOW</td>
-                                <td>Team Lead</td>
-                                <td>06-10-26 - 12:15pm</td>
-                                <td><span className='approved'>Approved</span></td>
-                                <td><div className="items-center"><Link to="/approved-observation-details" className="btn-view" title="View"><MdRemoveRedEye /></Link></div></td>
+                                <td><span className="pending">Pending</span></td>
+                                <td><div className="items-center"><Link to="/assigned-observation" className="btn- btn-view" title="View"><MdRemoveRedEye /></Link></div></td>
                             </tr>
                         </tbody>
                     </table>

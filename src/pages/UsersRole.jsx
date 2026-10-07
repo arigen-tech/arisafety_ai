@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom';
 import { TitleBar } from '../components/UI/TitleBar';
-import { MdRemoveRedEye, MdEdit } from "react-icons/md";
+import { MdEdit } from "react-icons/md";
 import { FaPlus } from "react-icons/fa6";
+import { TiLockClosed, TiLockOpen } from "react-icons/ti";
 import { useState } from 'react';
 
 
-import { TiLockClosed, TiLockOpen } from "react-icons/ti";
 
 
 export const UsersRole = () => {
@@ -22,24 +22,24 @@ export const UsersRole = () => {
             <TitleBar title="Mange User's Roles" />
 
             <div className="card">
-                <div class="grid mb-30">
-                    <div class="form-group">
+                <div className="grid mb-30">
+                    <div className="form-group">
                         <label>Name <span>*</span></label>
                         <input type="text" className='searchIcon' placeholder="" />
                     </div>
-                    <div class="form-group">
+                    <div className="form-group">
                         <label>Business Unit <span>*</span></label>
                         <input type="text" className='searchIcon' placeholder="" />
                     </div>
-                    <div class="form-group">
+                    <div className="form-group">
                         <label>Plant</label>
                         <input type="text" className='searchIcon' placeholder="" />
                     </div>
-                    <div class="form-group">
+                    <div className="form-group">
                         <label>Department</label>
                         <input type="text" className='searchIcon' placeholder="" />
                     </div>
-                    <div class="form-group">
+                    <div className="form-group">
                         <label>User Role</label>
                         <select>
                             <option value="">Select Role</option>
@@ -47,8 +47,8 @@ export const UsersRole = () => {
                         </select>
                     </div>
 
-                    <div class="btn-group itemEnd">
-                        <button type="button" class="btn btn-primary btnAdd"><FaPlus /> <span>Add Role</span></button>
+                    <div className="btn-group itemEnd">
+                        <button type="button" className="btn btn-primary btnAdd"><FaPlus /> <span>Add Role</span></button>
                     </div>
 
                 </div>
@@ -124,20 +124,20 @@ export const UsersRole = () => {
             </div>
 
 
-            {roleChange && <div class="siteBackdrop">
-                <div class="popupModal ms-model">
-                    <div class="modalHeader">
+            {roleChange && <div className="modalBackdrop">
+                <div className="popupModal ms-model">
+                    <div className="modalHeader">
                         <h2>Confirm Status Change</h2>
                         <button type="button" title="Close" onClick={handleRoleChangeClose} >
                             <img src="images/icons/cose-icon.svg" alt="Close icon" />
                         </button>
                     </div>
 
-                    <div class="modalBody">
+                    <div className="modalBody">
                         <p className='text-center'>Are you sure you want to change the User Role?</p>
                     </div>
 
-                    <div class="modalFooter">
+                    <div className="modalFooter">
                         <button className='btn btn-gray' onClick={handleRoleChangeClose}>Cancel</button>
                         <button className='btn btn-primary' onClick={handleRoleChangeClose}>Confirm</button>
                     </div>
