@@ -14,6 +14,9 @@ import { RejecedObservationDetails } from "./pages/RejecedObservationDetails";
 import { Profile } from "./pages/Profile";
 import { AssignedObservation } from "./pages/AssignedObservation";
 import { PendingAssignedObservation } from "./pages/PendingAssignedObservation";
+import { Assigned } from "./pages/Assigned";
+import { AssignedObservationDetails } from "./pages/AssignedObservationDetails";
+import { AssignedObservationSubmission } from "./pages/AssignedObservationSubmission";
 
 const router = createBrowserRouter([
   {
@@ -32,6 +35,10 @@ const router = createBrowserRouter([
       {
         path: "/pending",
         element: <Pending />,
+      },
+      {
+        path: "/assigned",
+        element: <Assigned />,
       },
       {
         path: "/approved",
@@ -64,6 +71,14 @@ const router = createBrowserRouter([
       {
         path: "/assigned-observation",
         element: <AssignedObservation />,
+      },
+      {
+        path: "/assigned-observation-details",
+        element: <AssignedObservationDetails />,
+      },
+      {
+        path: "/assigned-observation-submission",
+        element: <AssignedObservationSubmission />,
       },
       {
         path: "/profile",

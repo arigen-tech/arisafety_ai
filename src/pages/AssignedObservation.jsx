@@ -265,6 +265,10 @@ export const AssignedObservation = () => {
                         <label>After Currection </label>
                         <input type="file" placeholder="" />
                     </div>
+                    <div className="form-group">
+                        <label>Remarks </label>
+                        <textarea maxLength={250}></textarea>
+                    </div>
 
                 </div>
  
