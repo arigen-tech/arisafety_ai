@@ -1,8 +1,65 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { TitleBar } from '../components/UI/TitleBar'
 import { MdRemoveRedEye } from 'react-icons/md'
+import { TitleBar } from '../components/UI/TitleBar'
+import { getRequest } from '../service/apiService'
+
+const ENDPOINT = '/api/observations/assigned'
+
+const toArray = (response) => {
+    if (Array.isArray(response)) return response
+    const data = response?.data ?? response
+    return data?.items ?? data?.rows ?? data?.results ?? []
+}
+
+const pick = (observation, keys, fallback = '') => {
+    for (const key of keys) {
+        if (observation?.[key] !== undefined && observation[key] !== null) {
+            return observation[key]
+        }
+    }
+    return fallback
+}
+
+const formatDateTime = (value) => {
+    if (!value) return '--'
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return String(value)
+
+    const datePart = date.toLocaleDateString('en-GB')
+    const timePart = date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+    }).toLowerCase()
+    return `${datePart} - ${timePart}`
+}
 
 export const Assigned = () => {
+    const [rows, setRows] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState('')
+
+    useEffect(() => {
+        let ignore = false
+
+        const loadAssigned = async () => {
+            try {
+                const response = await getRequest(ENDPOINT)
+                if (!ignore) setRows(toArray(response))
+            } catch (err) {
+                if (!ignore) {
+                    console.error('Assigned observations load failed:', err)
+                    setError(err.message || 'Assigned observations load nahi ho paye')
+                }
+            } finally {
+                if (!ignore) setLoading(false)
+            }
+        }
+
+        loadAssigned()
+        return () => { ignore = true }
+    }, [])
+
     return (
         <>
             <TitleBar title="Assigned Observation" />
@@ -16,42 +73,49 @@ export const Assigned = () => {
                                 <th>Plant</th>
                                 <th>Risk</th>
                                 <th>Reported By</th>
-                                <th>Reported Date & Time</th>
+                                <th>Reported Date &amp; Time</th>
                                 <th>Status</th>
                                 <th className="text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td>26</td>
-                                <td>Pune</td>
-                                <td>HIGH</td>
-                                <td>--</td>
-                                <td>19/10/2026 - 11:29 am</td>
-                                <td><span className="pending">ASSIGNED_TO_OFFICER</span></td>
-                                <td>
-                                    <div className="items-center">
-                                        <Link to='/assigned-observation-details' className="btn-view" title="View">
-                                            <MdRemoveRedEye />
-                                        </Link>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>26</td>
-                                <td>Bengaluru</td>
-                                <td>MEDIUM</td>
-                                <td>--</td>
-                                <td>16/10/2026 - 4:37 pm</td>
-                                <td><span className="pending">ASSIGNED_TO_OFFICER</span></td>
-                                <td>
-                                    <div className="items-center">
-                                        <Link to='' className="btn-view" title="View">
-                                            <MdRemoveRedEye />
-                                        </Link>
-                                    </div>
-                                </td>
-                            </tr>
+                            {loading ? (
+                                <tr><td colSpan={7} className="text-center">Loading...</td></tr>
+                            ) : error ? (
+                                <tr><td colSpan={7} className="text-center">{error}</td></tr>
+                            ) : rows.length === 0 ? (
+                                <tr><td colSpan={7} className="text-center">No assigned observations found</td></tr>
+                            ) : rows.map((observation, index) => {
+                                const observationId = pick(observation, ['observation_id', 'observationId', 'id'])
+                                const observationCode = pick(
+                                    observation,
+                                    ['observation_code', 'observation_no', 'observationCode'],
+                                    observationId || '--'
+                                )
+
+                                return (
+                                    <tr key={observationId || index}>
+                                        <td>{observationCode}</td>
+                                        <td>{pick(observation, ['plant_name', 'plantName', 'plant'], '--')}</td>
+                                        <td>{pick(observation, ['risk_level', 'riskLevel', 'risk'], '--')}</td>
+                                        <td>{pick(observation, ['reported_by', 'reported_by_name', 'reportedBy', 'employee_name', 'employeeName'], '--')}</td>
+                                        <td>{formatDateTime(pick(observation, ['occurred_at', 'created_at', 'createdAt', 'observation_date', 'reported_at']))}</td>
+                                        <td><span className="pending">{pick(observation, ['status'], 'ASSIGNED_TO_OFFICER')}</span></td>
+                                        <td>
+                                            <div className="items-center">
+                                                <Link
+                                                    to="/assigned-observation-details"
+                                                    state={{ observation }}
+                                                    className="btn-view"
+                                                    title="View"
+                                                >
+                                                    <MdRemoveRedEye />
+                                                </Link>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )
+                            })}
                         </tbody>
                     </table>
                 </div>

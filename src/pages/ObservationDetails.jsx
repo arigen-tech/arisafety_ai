@@ -6,7 +6,7 @@ import { getRequest, postRequest, getImageRequest } from '../service/apiService'
 const DEPARTMENT_ENDPOINT = '/api/catalog/department'
 const RESPONSIBLE_PEOPLE_ENDPOINT = '/api/catalog/responsible_people'
 const SUBMIT_ENDPOINT = '/api/observations/submit'
-const ANALYZE_ENDPOINT = '/api/image/analyze'
+const CAPA_RECOMMENDATIONS_ENDPOINT = '/api/observations' // + /{id}/capa-recommendations
 const getTodayDate = () => {
     const date = new Date()
     date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
@@ -47,6 +47,44 @@ const pick = (obj, keys, fallback = '') => {
 // null / khali value ki jagah "-"
 const dash = (v) => (v === undefined || v === null || v === '' ? '-' : String(v))
 
+// FastAPI detail ko text mein badalta hai (string / array / object)
+// e.g. { "detail": "A supplied CAPA photo could not be analyzed." }
+const detailToText = (detail) => {
+    if (!detail) return ''
+    if (typeof detail === 'string') return detail
+    if (Array.isArray(detail)) {
+        return detail
+            .map((item) => `${item.loc?.slice(1).join('.') || 'error'}: ${item.msg}`)
+            .join('\n')
+    }
+    if (typeof detail === 'object') return detailToText(detail.detail) || detail.message || ''
+    return ''
+}
+
+// apiService error kisi bhi shape mein throw kare, message nikal leta hai
+const getErrorMessage = (error, fallback) => {
+    const candidates = [
+        error?.response?.detail,
+        error?.response?.data?.detail,
+        error?.response?.data,
+        error?.response,
+        error?.data?.detail,
+        error?.data,
+        error?.detail,
+    ]
+    for (const c of candidates) {
+        const text = detailToText(c)
+        if (text) return text
+    }
+    // kabhi error.message mein hi JSON string hoti hai: '{"detail":"..."}'
+    try {
+        const text = detailToText(JSON.parse(error?.message))
+        if (text) return text
+    } catch { /* JSON nahi hai */ }
+
+    return error?.message || fallback
+}
+
 // "27-Sep-2026 - 10:35am"
 const formatDateTime = (value) => {
     if (!value) return '-'
@@ -73,30 +111,6 @@ const toEndpoint = (url) => {
     }
 }
 
-// analyze API ka response { "picture-1": { hazards: [{ recommendations: [...] }] }, ... } hota hai.
-// Isme se sirf recommendations nikalta hai (pehli 3 lines), baaki response nahi dikhata.
-const textOf = (v) => (typeof v === 'string' ? v : v?.text ?? v?.recommendation ?? v?.description ?? '')
-
-const extractRecommendations = (res, limit = 3) => {
-    const root = res?.data ?? res ?? {}
-    const items = Array.isArray(root) ? root : [root, ...Object.values(root)]
-    const recs = []
-
-    items.forEach((r) => {
-        if (!r || typeof r !== 'object') return
-        const list = [
-            ...(Array.isArray(r.recommendations) ? r.recommendations : []),
-            ...(Array.isArray(r.hazards) ? r.hazards : []).flatMap((h) => h?.recommendations || []),
-        ]
-        list.forEach((x) => {
-            const t = String(textOf(x)).trim()
-            if (t && !recs.includes(t)) recs.push(t)
-        })
-    })
-
-    return recs.slice(0, limit).join('\n')
-}
-
 export const ObservationDetails = () => {
     // Pending.jsx link: /observation-details?id=2
     const [searchParams] = useSearchParams()
@@ -105,7 +119,7 @@ export const ObservationDetails = () => {
     const obs = location.state?.observation ?? null
     const plantId = searchParams.get('plant_id') || pick(obs, ['plant_id', 'plantId'], '')
 
-    const [aISuggestions, setAISuggestions] = useState(false);
+    const [aISuggestions] = useState(false);
     const [formSubmit, setFormSubmit] = useState(false);
     const [formReject, setFormReject] = useState(false);
 
@@ -249,50 +263,59 @@ export const ObservationDetails = () => {
             setFormSubmit(true)      // success popup
         } catch (err) {
             console.error(err)
-            const detail = err.response?.detail
-            const msg = Array.isArray(detail)
-                ? detail.map((d) => `${d.loc?.slice(1).join('.')}: ${d.msg}`).join('\n')
-                : err.message
-            alert(msg || 'Observation submit nahi ho paya')
+            alert(getErrorMessage(err, 'Observation submit nahi ho paya'))
         } finally {
             setLoading(false)
         }
     }
-    // ---------- CAPA Recommendation (POST /api/image/analyze) ----------
+
+    // ---------- CAPA Recommendation (POST /api/observations/{id}/capa-recommendations) ----------
     const handleCapaRecommendation = async () => {
+        const observationId = [
+            pick(obs, ['id']),
+            pick(obs, ['observation_id', 'observationId']),
+            searchParams.get('id'),
+        ].find((id) => Number.isSafeInteger(Number(id)) && Number(id) > 0)
+        const responsiblePersonId = Number(capa.responsiblePerson)
+        const selectedDepartment = Number(selectedDepartmentId)
+
+        if (!observationId) {
+            alert('Observation ID nahi mil paayi')
+            return
+        }
+        if (!Number.isInteger(responsiblePersonId) || responsiblePersonId <= 0) {
+            alert('Responsible Person select karo')
+            return
+        }
+        if (!Number.isInteger(selectedDepartment) || selectedDepartment <= 0) {
+            alert('Department select karo')
+            return
+        }
+
+        const fd = new FormData()
+        fd.append('responsible_person_id', String(responsiblePersonId))
+        fd.append('department_id', String(selectedDepartment))
+        fd.append('target_date', capa.targetDate)
+        if (capa.priority) fd.append('priority', capa.priority.toUpperCase())
+        images.forEach((file) => fd.append('photos', file))   // same key repeat
+
         setAnalyzing(true)
         try {
-            let files = images
-            // photo select nahi ki to observation ki apni image evidence use karo
-            if (!files.length) {
-                const imgAtts = attachments.filter((a) => String(a.file_type).toUpperCase() === 'IMAGE')
-                files = await Promise.all(
-                    imgAtts.map(async (a) => {
-                        const blob = await getImageRequest(toEndpoint(a.file_url), {}, 'blob')
-                        return new File([blob], fileNameOf(a.file_path), { type: blob.type })
-                    })
-                )
-            }
-            if (!files.length) {
-                alert('Photo select karo (ya observation mein image evidence hona chahiye)')
-                return
-            }
-
-            const fd = new FormData()
-            files.forEach((file) => fd.append('image', file))   // same key repeat
-            const desc = obs?.description || capa.correctiveAction
-            if (desc) fd.append('description', desc)
-
-            const result = await postRequest(ANALYZE_ENDPOINT, fd, { isMultipart: true })
-            setAiSuggestionText(extractRecommendations(result) || 'No recommendations available')
-            setAISuggestions(true)
+            const result = await postRequest(
+                `${CAPA_RECOMMENDATIONS_ENDPOINT}/${Number(observationId)}/capa-recommendations`,
+                fd,
+                { isMultipart: true }
+            )
+            // response -> Corrective / Preventive Action textareas mein bind
+            setCapa((prev) => ({
+                ...prev,
+                correctiveAction: result?.corrective_action ?? prev.correctiveAction,
+                preventiveAction: result?.preventive_action ?? prev.preventiveAction,
+            }))
         } catch (err) {
-            console.error(err)
-            const detail = err.response?.detail
-            const msg = Array.isArray(detail)
-                ? detail.map((d) => `${d.loc?.slice(1).join('.')}: ${d.msg}`).join('\n')
-                : err.message
-            alert(msg || 'CAPA recommendation nahi mil paayi')
+            console.error('CAPA recommendation request failed:', err)
+            // e.g. "A supplied CAPA photo could not be analyzed."
+            alert(getErrorMessage(err, 'CAPA recommendation nahi mil paayi'))
         } finally {
             setAnalyzing(false)
         }

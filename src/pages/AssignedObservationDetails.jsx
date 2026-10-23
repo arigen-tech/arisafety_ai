@@ -1,8 +1,102 @@
-import { Link, useNavigate } from "react-router-dom"
+import { useEffect, useState } from "react"
+import { Link, useLocation, useNavigate } from "react-router-dom"
 import { TitleBar } from "../components/UI/TitleBar"
+import { getRequest } from "../service/apiService"
+
+const DEPARTMENT_ENDPOINT = "/api/catalog/department"
+const RESPONSIBLE_PEOPLE_ENDPOINT = "/api/catalog/responsible_people"
+
+const toArray = (response, keys = []) => {
+    if (Array.isArray(response)) return response
+    const data = response?.data ?? response
+    if (Array.isArray(data)) return data
+    for (const key of [...keys, "items", "rows", "results"]) {
+        if (Array.isArray(data?.[key])) return data[key]
+    }
+    return []
+}
+
+const pick = (object, keys, fallback = "") => {
+    for (const key of keys) {
+        if (object?.[key] !== undefined && object[key] !== null) return object[key]
+    }
+    return fallback
+}
+
+const getTodayDate = () => {
+    const date = new Date()
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
+    return date.toISOString().slice(0, 10)
+}
 
 export const AssignedObservationDetails = () => {
     const navigate = useNavigate();
+    const location = useLocation()
+    const observation = location.state?.observation
+    const plantId = String(pick(observation, ["plant_id", "plantId"], pick(observation?.plant, ["id"], "")) || "1")
+    const initialDepartmentId = String(pick(observation, ["department_id", "departmentId"], "") || "1")
+    const [departments, setDepartments] = useState([])
+    const [departmentId, setDepartmentId] = useState(initialDepartmentId)
+    const [targetDate, setTargetDate] = useState(getTodayDate)
+    const [responsiblePeople, setResponsiblePeople] = useState([])
+    const [departmentsLoading, setDepartmentsLoading] = useState(true)
+    const [peopleLoading, setPeopleLoading] = useState(false)
+    const [departmentError, setDepartmentError] = useState("")
+    const [peopleError, setPeopleError] = useState("")
+
+    useEffect(() => {
+        let ignore = false
+
+        const loadDepartments = async () => {
+            try {
+                const response = await getRequest(DEPARTMENT_ENDPOINT)
+                if (!ignore) setDepartments(toArray(response, ["departments"]))
+            } catch (error) {
+                if (!ignore) {
+                    console.error("Department load failed:", error)
+                    setDepartmentError(error.message || "Departments could not be loaded")
+                }
+            } finally {
+                if (!ignore) setDepartmentsLoading(false)
+            }
+        }
+
+        loadDepartments()
+        return () => { ignore = true }
+    }, [])
+
+    useEffect(() => {
+        let ignore = false
+        const endpoint = `${RESPONSIBLE_PEOPLE_ENDPOINT}?department_id=${encodeURIComponent(departmentId)}&plant_id=${encodeURIComponent(plantId)}`
+
+        const loadResponsiblePeople = async () => {
+            setPeopleLoading(true)
+            setPeopleError("")
+            try {
+                const response = await getRequest(endpoint)
+                if (!ignore) {
+                    setResponsiblePeople(toArray(response, [
+                        "responsible_people",
+                        "responsiblePeople",
+                        "people",
+                        "users",
+                    ]))
+                }
+            } catch (error) {
+                if (!ignore) {
+                    console.error("Responsible people load failed:", error)
+                    setResponsiblePeople([])
+                    setPeopleError(error.message || "Responsible people could not be loaded")
+                }
+            } finally {
+                if (!ignore) setPeopleLoading(false)
+            }
+        }
+
+        loadResponsiblePeople()
+        return () => { ignore = true }
+    }, [departmentId, plantId])
+
     return (
         <>
 
@@ -179,17 +273,47 @@ export const AssignedObservationDetails = () => {
                     </div>
                     <div class="form-group">
                         <label>Responsible Person </label>
-                        <input placeholder="" type="text" value="" name="responsiblePerson" />
+                        <select name="responsiblePerson" disabled={!departmentId || peopleLoading || Boolean(peopleError)}>
+                            <option value="">
+                                {!departmentId ? "Select department first" : peopleLoading ? "Loading..." : peopleError ? "Could not load responsible people" : "Select"}
+                            </option>
+                            {responsiblePeople.map((person, index) => {
+                                const personId = pick(person, ["user_id", "userId", "employee_id", "id", "value"], index)
+                                const personName = pick(person, ["name", "full_name", "fullName", "user_name", "username", "employee_name"], "")
+                                if (!personName) return null
+                                return <option key={personId} value={personId}>{personName}</option>
+                            })}
+                        </select>
+                        {peopleError && <small role="alert">{peopleError}</small>}
                     </div>
                     <div class="form-group">
                         <label>Department </label>
-                        <select>
-                            <option value="">Select</option>
+                        <select
+                            value={departmentId}
+                            onChange={(event) => {
+                                setDepartmentId(event.target.value)
+                                setResponsiblePeople([])
+                                setPeopleError("")
+                            }}
+                            disabled={departmentsLoading || Boolean(departmentError)}
+                        >
+                            <option value="">{departmentsLoading ? "Loading..." : departmentError ? "Could not load departments" : "Select"}</option>
+                            {departments.map((department, index) => {
+                                const id = pick(department, ["id", "department_id", "departmentId"], index)
+                                const name = pick(department, ["name", "department_name", "departmentName", "dept_name"])
+                                return <option key={id} value={id}>{name || `Department ${id}`}</option>
+                            })}
                         </select>
+                        {departmentError && <small role="alert">{departmentError}</small>}
                     </div>
                     <div class="form-group">
                         <label>Target Date</label>
-                        <input placeholder="" type="date" value="" name="targetDate" />
+                        <input
+                            type="date"
+                            value={targetDate}
+                            name="targetDate"
+                            onChange={(event) => setTargetDate(event.target.value)}
+                        />
                     </div>
                     <div class="form-group">
                         <label>Priority</label>
