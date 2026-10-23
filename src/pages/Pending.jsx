@@ -22,6 +22,9 @@ const mapObservation = (item) => {
       ? d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).toLowerCase()
       : "",
     status: item.status ?? "Pending",
+    departmentId: item.department_id ?? item.departmentId ?? item.department?.id ?? "",
+    plantId: item.plant_id ?? item.plantId ?? item.plant?.id ?? "",
+    observation: item,
   };
 };
 
@@ -93,7 +96,7 @@ export const Pending = () => {
               ) : rows.length === 0 ? (
                 <tr><td colSpan="7" className="text-center">No pending observations</td></tr>
               ) : (
-                rows.map(({ id, dbId, location, priority, reportedBy, date, time, status }) => (
+                rows.map(({ id, dbId, location, priority, reportedBy, date, time, status, departmentId, plantId, observation }) => (
                   <tr key={dbId ?? id}>
                     <td>{id}</td>
                     <td>{location}</td>
@@ -104,9 +107,10 @@ export const Pending = () => {
                     <td>
                       <div className="items-center">
                         <Link
-                          to={`/observation-details?id=${dbId ?? id}`}
+                          to={`/observation-details?id=${dbId ?? id}&department_id=${departmentId}&plant_id=${plantId}`}
                           className="btn- btn-view"
                           title="View"
+                          state={{ observation }}
                         >
                           <MdRemoveRedEye />
                         </Link>

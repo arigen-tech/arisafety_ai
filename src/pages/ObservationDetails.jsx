@@ -1,15 +1,42 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { TitleBar } from '../components/UI/TitleBar'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { getRequest, postRequest, getImageRequest } from '../service/apiService'
 
 const DEPARTMENT_ENDPOINT = '/api/catalog/department'
+const RESPONSIBLE_PEOPLE_ENDPOINT = '/api/catalog/responsible_people'
 const SUBMIT_ENDPOINT = '/api/observations/submit'
 const ANALYZE_ENDPOINT = '/api/image/analyze'
-const OBSERVATION_ENDPOINT = (id) => `/api/observations/${id}`
+const getTodayDate = () => {
+    const date = new Date()
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
+    return date.toISOString().slice(0, 10)
+}
 
 // response array ho ya { data: [...] }, dono chalega
 const toArray = (json) => (Array.isArray(json) ? json : json?.data || json?.items || json?.rows || [])
+let departmentsRequest
+
+const getDepartments = () => {
+    if (!departmentsRequest) {
+        departmentsRequest = getRequest(DEPARTMENT_ENDPOINT)
+            .then(toArray)
+            .catch((error) => {
+                departmentsRequest = null
+                throw error
+            })
+    }
+    return departmentsRequest
+}
+
+const toResponsiblePeople = (response) => {
+    const root = response?.data ?? response
+    if (Array.isArray(root)) return root
+    for (const key of ['responsible_people', 'responsiblePeople', 'people', 'users', 'items', 'rows']) {
+        if (Array.isArray(root?.[key])) return root[key]
+    }
+    return []
+}
 
 // pehla available key utha leta hai (snake_case / camelCase dono ke liye)
 const pick = (obj, keys, fallback = '') => {
@@ -73,8 +100,10 @@ const extractRecommendations = (res, limit = 3) => {
 export const ObservationDetails = () => {
     // Pending.jsx link: /observation-details?id=2
     const [searchParams] = useSearchParams()
-    const id = searchParams.get('id')
     const navigate = useNavigate()
+    const location = useLocation()
+    const obs = location.state?.observation ?? null
+    const plantId = searchParams.get('plant_id') || pick(obs, ['plant_id', 'plantId'], '')
 
     const [aISuggestions, setAISuggestions] = useState(false);
     const [formSubmit, setFormSubmit] = useState(false);
@@ -82,10 +111,8 @@ export const ObservationDetails = () => {
 
     const [departments, setDepartments] = useState([]);
     const [departmentId, setDepartmentId] = useState('');
-
-    const [obs, setObs] = useState(null);           // GET /api/observations/:id ka data
-    const [obsLoading, setObsLoading] = useState(true);
-    const [obsError, setObsError] = useState('');
+    const [responsiblePeople, setResponsiblePeople] = useState([]);
+    const responsiblePeopleRequests = useRef(new Map())
 
     const [preview, setPreview] = useState(null);   // { type, url, name } evidence preview
 
@@ -94,52 +121,51 @@ export const ObservationDetails = () => {
     const [aiResult, setAiResult] = useState(null);
     const [aiSuggestionText, setAiSuggestionText] = useState('');
     const [analyzing, setAnalyzing] = useState(false);
-    const [capa, setCapa] = useState({
+    const [capa, setCapa] = useState(() => ({
         correctiveAction: '',
         preventiveAction: '',
         responsiblePerson: '',
-        targetDate: '',
+        targetDate: getTodayDate(),
         priority: '',
-    });
+    }));
     const handleCapaChange = (e) =>
         setCapa((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
+    const selectedDepartmentId = departmentId || searchParams.get('department_id') || String(pick(obs, ['department_id', 'departmentId'], ''))
+
     // ---------- Department dropdown (GET API) ----------
     useEffect(() => {
+        let ignore = false
         const loadDepartments = async () => {
             try {
-                const data = await getRequest(DEPARTMENT_ENDPOINT)
-                setDepartments(toArray(data))
+                const data = await getDepartments()
+                if (!ignore) setDepartments(data)
             } catch (err) {
-                console.error('Department load failed:', err)
+                if (!ignore) console.error('Department load failed:', err)
             }
         }
         loadDepartments()
+        return () => { ignore = true }
     }, [])
 
-    // ---------- Observation details (GET /api/observations/:id) ----------
-    useEffect(() => {
-        if (!id) {
-            setObsLoading(false)
-            setObsError('Observation id nahi mili (URL mein ?id=... hona chahiye)')
-            return
-        }
-        let ignore = false
-        const loadObservation = async () => {
-            try {
-                const data = await getRequest(OBSERVATION_ENDPOINT(id))
-                if (ignore) return
-                setObs(Array.isArray(data) ? data[0] : data?.data ?? data)
-            } catch (err) {
-                console.error('Observation load failed:', err)
-                if (!ignore) setObsError(err.message || 'Observation load nahi ho paya')
-            } finally {
-                if (!ignore) setObsLoading(false)
+    const loadResponsiblePeople = async () => {
+        const requestDepartmentId = selectedDepartmentId || '1'
+        const requestPlantId = plantId || '1'
+        const endpoint = `${RESPONSIBLE_PEOPLE_ENDPOINT}?department_id=${encodeURIComponent(requestDepartmentId)}&plant_id=${encodeURIComponent(requestPlantId)}`
+        try {
+            if (!responsiblePeopleRequests.current.has(endpoint)) {
+                responsiblePeopleRequests.current.set(
+                    endpoint,
+                    getRequest(endpoint).then(toResponsiblePeople)
+                )
             }
+            setResponsiblePeople(await responsiblePeopleRequests.current.get(endpoint))
+        } catch (err) {
+            responsiblePeopleRequests.current.delete(endpoint)
+            console.error('Responsible people load failed:', err)
+            setResponsiblePeople([])
         }
-        loadObservation()
-        return () => { ignore = true }
-    }, [id])
+    }
 
     // preview ka blob URL band hone par free karo
     const closePreview = () => {
@@ -290,9 +316,6 @@ export const ObservationDetails = () => {
                 <button type='button' className="btnBack" onClick={() => navigate(-1)}></button>
                 <TitleBar title="Observation Details" />
             </div>
-
-            {obsLoading && <div className="card mb-20"><p className="text-center">Loading...</p></div>}
-            {!obsLoading && obsError && <div className="card mb-20"><p className="text-center">{obsError}</p></div>}
 
             <div className="card mb-20">
 
@@ -485,11 +508,23 @@ export const ObservationDetails = () => {
                     </div>
                     <div className="form-group">
                         <label>Responsible Person </label>
-                        <input type="text" placeholder="" name="responsiblePerson" value={capa.responsiblePerson} onChange={handleCapaChange} />
+                        <select name="responsiblePerson" value={capa.responsiblePerson} onFocus={loadResponsiblePeople} onChange={handleCapaChange}>
+                            <option value="">Select</option>
+                            {responsiblePeople.map((person) => {
+                                const userId = pick(person, ['user_id', 'userId', 'id', 'value'])
+                                const name = pick(person, ['name', 'full_name', 'fullName', 'user_name', 'username', 'employee_name'])
+                                if (!userId || !name) return null
+                                return <option key={userId} value={userId}>{name}</option>
+                            })}
+                        </select>
                     </div>
                     <div className="form-group">
                         <label>Department </label>
-                        <select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)}>
+                        <select value={selectedDepartmentId} onChange={(e) => {
+                            setDepartmentId(e.target.value)
+                            setResponsiblePeople([])
+                            setCapa((prev) => ({ ...prev, responsiblePerson: '' }))
+                        }}>
                             <option value="">Select</option>
                             {departments.map((d, i) => {
                                 const dId = pick(d, ['id', 'department_id', 'departmentId'], i)
@@ -530,8 +565,27 @@ export const ObservationDetails = () => {
                 </div>}
             </div>
 
+            <div className="card mb-20">
+                <h3 className='mb-10'>Upload Before &amp; After Evidence</h3>
+
+                <div className="grid mb-15">
+                    <div className="form-group">
+                        <label>Before Correction</label>
+                        <input type="file" accept="image/*" />
+                    </div>
+                    <div className="form-group">
+                        <label>After Correction</label>
+                        <input type="file" accept="image/*" />
+                    </div>
+                    <div className="form-group">
+                        <label>Remarks</label>
+                        <textarea maxLength={250}></textarea>
+                    </div>
+                </div>
+            </div>
+
             <div className="d-flex">
-                <button type="button" className="btn btn-primary" onClick={handleFormSubmit} disabled={loading}>{loading ? 'Please wait...' : 'Submit'}</button>
+                <button type="button" className="btn btn-primary" onClick={handleFormSubmit} disabled={loading}>{loading ? 'Please wait...' : 'Assigned'}</button>
                 <button type="button" className="btn btn-rejected" onClick={handleFormRejection}>Reject</button>
             </div>
 

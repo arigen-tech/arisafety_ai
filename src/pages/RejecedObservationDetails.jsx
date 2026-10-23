@@ -1,8 +1,15 @@
 import { TitleBar } from '../components/UI/TitleBar'
 import { Link, useNavigate } from 'react-router-dom'
 
+const getTodayDate = () => {
+    const date = new Date()
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
+    return date.toISOString().slice(0, 10)
+}
+
 export const RejecedObservationDetails = () => {
       const navigate = useNavigate();
+    const todayDate = getTodayDate()
 
     return (
         <>
@@ -217,7 +224,7 @@ export const RejecedObservationDetails = () => {
                     </div>
                     <div className="form-group">
                         <label>Target Date</label>
-                        <input type="date" placeholder=""  />
+                        <input type="date" placeholder="" defaultValue={todayDate} />
                     </div>
                     <div className="form-group">
                         <label>Priority</label>

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { TitleBar } from '../components/UI/TitleBar'
 import { MdRemoveRedEye } from 'react-icons/md'
 import { Link } from 'react-router-dom'
-import { getRequest } from "../service/apiService" // path apne project ke hisaab se check karo
+import { getRequest } from "../service/apiService"
 
 const ENDPOINT = '/api/observations/approved'
 
