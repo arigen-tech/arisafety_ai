@@ -103,6 +103,13 @@ export const ApprovedObservationDetails = () => {
     ]
     const ppe = ai.ppe || {}
     const attachments = Array.isArray(observation?.attachments) ? observation.attachments : []
+    const beforeEvidence = attachments.filter(
+        (attachment) => String(attachment.evidence_type || '').toUpperCase() === 'PRE'
+    )
+    const afterEvidence = attachments.filter(
+        (attachment) => String(attachment.evidence_type || '').toUpperCase() === 'POST'
+    )
+    const capa = observation?.capa_recommendation ?? observation?.capaRecommendation ?? {}
     const ppeRows = [
         { label: 'Helmet', ok: ppe.helmet },
         { label: 'Safety Glasses', ok: ppe.goggles },
@@ -170,6 +177,39 @@ export const ApprovedObservationDetails = () => {
                     </div>
 
                     <div className="card mb-20">
+                        <h3 className='mb-10'>Field Officer Before &amp; After Evidence</h3>
+                        <div className="grid mb-15">
+                            <div className="form-group">
+                                <label>Before Correction</label>
+                                {beforeEvidence.length ? beforeEvidence.map((attachment) => (
+                                    <div key={attachment.attachment_id ?? attachment.file_path}>
+                                        <button type="button" className="btnView" onClick={() => openEvidence(attachment)}>
+                                            View {getFileName(attachment.file_path)}
+                                        </button>
+                                    </div>
+                                )) : <p>No before evidence uploaded.</p>}
+                            </div>
+                            <div className="form-group">
+                                <label>After Correction</label>
+                                {afterEvidence.length ? afterEvidence.map((attachment) => (
+                                    <div key={attachment.attachment_id ?? attachment.file_path}>
+                                        <button type="button" className="btnView" onClick={() => openEvidence(attachment)}>
+                                            View {getFileName(attachment.file_path)}
+                                        </button>
+                                    </div>
+                                )) : <p>No after evidence uploaded.</p>}
+                            </div>
+                            <div className="form-group">
+                                <label>Field Officer Remarks</label>
+                                <textarea disabled readOnly value={display(pick(
+                                    observation?.field_officer_submission,
+                                    ['remarks'],
+                                ))} />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="card mb-20">
                         <div className='titleInner'>
                             <h3>Evidence</h3>
                             <p>View supporting documents, images and videos related to this record.</p>
@@ -188,9 +228,15 @@ export const ApprovedObservationDetails = () => {
                                         <tr><td colSpan={3} className="text-center">No evidence uploaded</td></tr>
                                     ) : attachments.map((attachment) => {
                                         const isVideo = String(attachment.file_type).toUpperCase() === 'VIDEO'
+                                        const evidenceType = String(attachment.evidence_type || '').toUpperCase()
+                                        const evidenceLabel = evidenceType === 'PRE'
+                                            ? 'Before Correction'
+                                            : evidenceType === 'POST'
+                                                ? 'After Correction'
+                                                : isVideo ? 'Video' : 'Image'
                                         return (
                                             <tr key={attachment.attachment_id ?? attachment.file_path}>
-                                                <td>{isVideo ? 'Video' : 'Image'}</td>
+                                                <td>{evidenceLabel}</td>
                                                 <td>{getFileName(attachment.file_path)}</td>
                                                 <td className='text-center'>
                                                     <button
@@ -206,6 +252,40 @@ export const ApprovedObservationDetails = () => {
                                     })}
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+
+                    <div className="card mb-20">
+                        <h3 className='mb-10'>CAPA Recommendation</h3>
+                        <div className="grid mb-15">
+                            <div className="form-group">
+                                <label>Corrective Action</label>
+                                <textarea disabled readOnly value={display(pick(capa, ['corrective_action', 'correctiveAction']))} />
+                            </div>
+                            <div className="form-group">
+                                <label>Preventive Action</label>
+                                <textarea disabled readOnly value={display(pick(capa, ['preventive_action', 'preventiveAction']))} />
+                            </div>
+                            <div className="form-group">
+                                <label>Department</label>
+                                <input type="text" value={display(pick(capa, ['department_name', 'departmentName', 'department'], pick(observation, ['department_name', 'department'])))} disabled readOnly />
+                            </div>
+                            <div className="form-group">
+                                <label>Responsible Person</label>
+                                <input type="text" value={display(pick(capa, ['responsible_person_name', 'responsiblePersonName', 'responsible_person_id']))} disabled readOnly />
+                            </div>
+                            <div className="form-group">
+                                <label>Target Date</label>
+                                <input type="text" value={display(pick(capa, ['target_date', 'targetDate']))} disabled readOnly />
+                            </div>
+                            <div className="form-group">
+                                <label>Priority</label>
+                                <input type="text" value={display(pick(capa, ['priority']))} disabled readOnly />
+                            </div>
+                            <div className="form-group">
+                                <label>AI Suggestions</label>
+                                <textarea disabled readOnly value={display(pick(capa, ['ai_suggestions', 'aiSuggestions']))} />
+                            </div>
                         </div>
                     </div>
 

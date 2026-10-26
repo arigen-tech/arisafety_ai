@@ -27,8 +27,10 @@ const formatDateTime = (value) => {
     return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${String(d.getFullYear()).slice(-2)} - ${h}:${pad(d.getMinutes())}${ampm}`
 }
 
-// REJECTED / rejected -> Rejected
-const titleCase = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : 'Rejected')
+const titleCase = (value) => String(value || 'Rejected')
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (character) => character.toUpperCase())
 
 export const Rejected = () => {
     const [rows, setRows] = useState([])

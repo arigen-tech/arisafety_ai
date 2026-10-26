@@ -27,8 +27,10 @@ const formatDateTime = (value) => {
     return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${String(d.getFullYear()).slice(-2)} - ${h}:${pad(d.getMinutes())}${ampm}`
 }
 
-// APPROVED / approved -> Approved
-const titleCase = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : 'Approved')
+const titleCase = (value) => String(value || 'Approved')
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, (character) => character.toUpperCase())
 
 export const Approved = () => {
     const [rows, setRows] = useState([])
@@ -89,7 +91,7 @@ export const Approved = () => {
 
                             {!loading && !error && rows.map((r, i) => {
                                 const obsId = pick(r, ['observation_id', 'observationId', 'id'])
-                                const detailId = pick(r, ['id', 'observation_pk', 'observationId', 'observation_id'])
+                                const detailId = pick(r, ['observation_id', 'observationId', 'observation_pk', 'id'])
                                 const code = pick(r, ['observation_code', 'observation_no', 'observationCode'], obsId)
                                 return (
                                     <tr key={obsId || i}>

@@ -21,6 +21,8 @@ const pick = (observation, keys, fallback = '') => {
     return fallback
 }
 
+const formatStatus = (status) => String(status ?? '').replace(/_/g, ' ')
+
 const formatDateTime = (value) => {
     if (!value) return '--'
     const date = new Date(value)
@@ -100,7 +102,7 @@ export const Assigned = () => {
                                         <td>{pick(observation, ['risk_level', 'riskLevel', 'risk'], '--')}</td>
                                         <td>{pick(observation, ['reported_by', 'reported_by_name', 'reportedBy', 'employee_name', 'employeeName'], '--')}</td>
                                         <td>{formatDateTime(pick(observation, ['occurred_at', 'created_at', 'createdAt', 'observation_date', 'reported_at']))}</td>
-                                        <td><span className="pending">{pick(observation, ['status'], 'ASSIGNED_TO_OFFICER')}</span></td>
+                                        <td><span className="pending">{formatStatus(pick(observation, ['status'], 'ASSIGNED_TO_OFFICER'))}</span></td>
                                         <td>
                                             <div className="items-center">
                                                 <Link

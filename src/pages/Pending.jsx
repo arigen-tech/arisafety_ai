@@ -28,6 +28,8 @@ const mapObservation = (item) => {
   };
 };
 
+const formatStatus = (status) => String(status ?? "Pending").replace(/_/g, " ");
+
 export const Pending = () => {
   const navigate = useNavigate();
   const [rows, setRows] = useState([]);
@@ -105,7 +107,7 @@ export const Pending = () => {
                     <td>{priority}</td>
                     <td>{reportedBy}</td>
                     <td>{date} - {time}</td>
-                    <td>{status}</td>
+                    <td>{formatStatus(status)}</td>
                     <td>
                       <div className="items-center">
                         <Link

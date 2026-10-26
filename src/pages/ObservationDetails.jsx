@@ -103,6 +103,8 @@ export const ObservationDetails = () => {
         String(activeRoleName).toLowerCase().replace(/[^a-z]/g, '') === 'fieldofficer'
     );
     const [roleResolved, setRoleResolved] = useState(false);
+    const [rejectionComments, setRejectionComments] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
 
     const [departments, setDepartments] = useState([]);
     const [departmentsLoading, setDepartmentsLoading] = useState(true);
@@ -317,6 +319,20 @@ export const ObservationDetails = () => {
     ]
     const ppe = ai.ppe || {}
     const attachments = Array.isArray(obs?.attachments) ? obs.attachments : []
+    const fieldSubmission = obs?.field_officer_submission || {}
+    const fieldEvidence = attachments.filter((attachment) =>
+        ['PRE', 'POST'].includes(String(attachment.evidence_type || '').toUpperCase())
+    )
+    const beforeEvidence = fieldEvidence.filter(
+        (attachment) => String(attachment.evidence_type).toUpperCase() === 'PRE'
+    )
+    const afterEvidence = fieldEvidence.filter(
+        (attachment) => String(attachment.evidence_type).toUpperCase() === 'POST'
+    )
+    const isFieldSubmissionComplete = fieldSubmissionComplete
+        || obs?.workflow_status === 'FIELD_OFFICER_SUBMITTED'
+        || obs?.status === 'SUBMITTED_BY_OFFICER'
+    const teamLeadReviewReady = roleResolved && isTeamLead && isFieldSubmissionComplete
 
     const ppeRows = [
         { label: 'Helmet', ok: ppe.helmet },
@@ -442,6 +458,7 @@ export const ObservationDetails = () => {
                 observationId: assignResult?.observation_id ?? updateResult?.observation_id ?? observationId,
                 riskLevel: assignResult?.risk_level ?? updateResult?.risk_level ?? v.risk,
             })
+            setSuccessMessage('Observation successfully assigned.')
             setFormSubmit(true)
         } catch (err) {
             console.error(updateSucceeded ? 'Observation assignment failed after updating:' : 'Observation update failed:', err)
@@ -450,6 +467,43 @@ export const ObservationDetails = () => {
             alert(updateSucceeded
                 ? `Observation details were updated, but assignment failed. ${message || 'Please retry assignment.'}`
                 : `The observation could not be updated. ${message || 'Please try again.'}`)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleFieldSubmission = async () => {
+        if (!observationId) {
+            alert('The observation ID could not be found.')
+            return
+        }
+
+        const formData = new FormData()
+        formData.append('remarks', fieldRemarks)
+        preImages.forEach((file) => formData.append('pre_images', file))
+        postImages.forEach((file) => formData.append('post_images', file))
+
+        setLoading(true)
+        try {
+            const response = await postRequest(
+                `${OBSERVATIONS_ENDPOINT}/${encodeURIComponent(observationId)}/field-submission`,
+                formData,
+                { isMultipart: true }
+            )
+            const submittedObservation = response?.data?.observation
+                ?? response?.observation
+                ?? response?.data
+                ?? response
+            setDetailObservation(submittedObservation)
+            setFieldSubmissionComplete(true)
+            setSuccessMessage('Observation submitted successfully.')
+            setFormSubmit(true)
+        } catch (error) {
+            console.error('Field observation submission failed:', error)
+            const detail = error?.response?.detail
+            alert(typeof detail === 'string'
+                ? detail
+                : error?.message || 'The field observation could not be submitted. Please try again.')
         } finally {
             setLoading(false)
         }
@@ -511,7 +565,43 @@ export const ObservationDetails = () => {
         navigate(-1);
     }
 
+    const handleTeamLeadDecision = async (decision, comments = '') => {
+        if (!observationId) {
+            alert('The observation ID could not be found.')
+            return
+        }
+
+        setLoading(true)
+        try {
+            const response = await postRequest(
+                `${OBSERVATIONS_ENDPOINT}/${encodeURIComponent(observationId)}/decision`,
+                { decision, ...(comments.trim() ? { comments: comments.trim() } : {}) }
+            )
+            const decidedObservation = response?.data?.observation
+                ?? response?.observation
+                ?? response?.data
+                ?? response
+            setDetailObservation(decidedObservation)
+            setSuccessMessage(decision === 'APPROVED'
+                ? 'Observation approved successfully.'
+                : 'Observation rejected successfully.')
+            setFormReject(false)
+            setFormSubmit(true)
+        } catch (error) {
+            console.error(`Observation ${decision.toLowerCase()} decision failed:`, error)
+            const detail = error?.response?.detail
+            alert(typeof detail === 'string'
+                ? detail
+                : error?.message || 'The observation decision could not be saved. Please try again.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
     const handleFormRejection = () => {
+        if (teamLeadReviewReady) {
+            setRejectionComments('')
+        }
         setFormReject(true);
     }
     const handleFormRejectionClose = () => {
@@ -704,7 +794,7 @@ export const ObservationDetails = () => {
                 </div>
             </div>
 
-            <div className="card mb-20">
+            {!teamLeadReviewReady && <div className="card mb-20">
                 <h3 className='mb-10'>CAPA Action</h3>
 
                 <div className="grid mb-15">
@@ -801,9 +891,46 @@ export const ObservationDetails = () => {
                         <textarea rows={4} value={aiSuggestionText} onChange={(e) => setAiSuggestionText(e.target.value)}></textarea>
                     </div>
                 </div>}
-            </div>
+            </div>}
 
-            {roleResolved && !isTeamLead && (
+            {roleResolved && (isFieldOfficer || isTeamLead) && isFieldSubmissionComplete && (
+                <div className="card mb-20">
+                    <h3 className='mb-10'>Submitted Before &amp; After Evidence</h3>
+                    <div className="grid mb-15">
+                        <div className="form-group">
+                            <label>Before Correction</label>
+                            {beforeEvidence.length
+                                ? beforeEvidence.map((attachment) => (
+                                        <div key={attachment.attachment_id ?? attachment.file_path}>
+                                            <button type="button" className="btnView" onClick={() => openEvidence(attachment)}>
+                                                View {fileNameOf(attachment.file_path)}
+                                            </button>
+                                        </div>
+                                    ))
+                                : <p>No before evidence uploaded.</p>}
+                        </div>
+                        <div className="form-group">
+                            <label>After Correction</label>
+                            {afterEvidence.length
+                                ? afterEvidence.map((attachment) => (
+                                        <div key={attachment.attachment_id ?? attachment.file_path}>
+                                            <button type="button" className="btnView" onClick={() => openEvidence(attachment)}>
+                                                View {fileNameOf(attachment.file_path)}
+                                            </button>
+                                        </div>
+                                    ))
+                                : <p>No after evidence uploaded.</p>}
+                        </div>
+                        <div className="form-group">
+                            <label>Remarks</label>
+                            <textarea disabled readOnly value={fieldSubmission.remarks || ''} />
+                        </div>
+                    </div>
+                    <p>Submitted {fieldSubmission.submitted_at ? formatDateTime(fieldSubmission.submitted_at) : 'successfully'}.</p>
+                </div>
+            )}
+
+            {roleResolved && isFieldOfficer && !isFieldSubmissionComplete && (
                 <div className="card mb-20">
                     <h3 className='mb-10'>Upload Before &amp; After Evidence</h3>
 
@@ -871,13 +998,25 @@ export const ObservationDetails = () => {
                     <div className="modalBody">
                         <div className="form-group">
                             <label>Reason for Rejection</label>
-                            <textarea placeholder='Enter your rejection...'></textarea>
+                            <textarea
+                                placeholder='Enter your rejection...'
+                                value={rejectionComments}
+                                onChange={(event) => setRejectionComments(event.target.value)}
+                            ></textarea>
                         </div>
                     </div>
 
                     <div className="modalFooter">
                         <button className='btn btn-gray' onClick={handleFormRejectionClose}>Cancel</button>
-                        <button className='btn btn-primary' onClick={handleFormRejectionClose}>Submit</button>
+                        <button
+                            className='btn btn-primary'
+                            onClick={() => teamLeadReviewReady
+                                ? handleTeamLeadDecision('REJECTED', rejectionComments)
+                                : handleFormRejectionClose()}
+                            disabled={loading}
+                        >
+                            {loading ? 'Please wait...' : 'Submit'}
+                        </button>
                     </div>
 
                 </div>
