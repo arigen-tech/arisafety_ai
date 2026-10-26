@@ -33,6 +33,7 @@ export const AssignedObservationDetails = () => {
     const navigate = useNavigate();
     const location = useLocation()
     const observation = location.state?.observation
+    const observationId = pick(observation, ["observation_id", "observationId", "id"])
     const plantId = String(pick(observation, ["plant_id", "plantId"], pick(observation?.plant, ["id"], "")) || "1")
     const initialDepartmentId = String(pick(observation, ["department_id", "departmentId"], "") || "1")
     const [departments, setDepartments] = useState([])
@@ -336,7 +337,13 @@ export const AssignedObservationDetails = () => {
 
             <div class="d-flex">
                 <button type="button" class="btn btn-gray" onClick={() => navigate(-1)}>Back</button>
-                <Link to="/assigned-observation-submission"><button type="button" class="btn btn-primary">Submission</button></Link>                
+                <Link
+                    to={`/assigned-observation-submission?id=${encodeURIComponent(observationId)}`}
+                    state={{ observation }}
+                    className="btn btn-primary"
+                >
+                    Submit
+                </Link>
             </div>
 
 

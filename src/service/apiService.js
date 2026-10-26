@@ -10,6 +10,27 @@ const createRequestError = (status, message, response) => {
   return error;
 };
 
+const getResponseErrorMessage = (responseData, statusText) => {
+  const detail = responseData && typeof responseData === "object"
+    ? responseData.detail
+    : null;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => {
+        const location = Array.isArray(item?.loc) ? item.loc.join(".") : "";
+        return [location, item?.msg].filter(Boolean).join(": ");
+      })
+      .join("; ");
+  }
+  return (
+    (responseData && typeof responseData === "object" && responseData.message) ||
+    (typeof responseData === "string" && responseData) ||
+    statusText ||
+    "Request failed"
+  );
+};
+
 /**
  * Function to call GET API
  * @param {string} endpoint - The API endpoint
@@ -39,13 +60,11 @@ export const getRequest = async (endpoint, headers = {}) => {
     const data = isJsonResponse ? await response.json() : await response.text();
 
     if (!response.ok) {
-      const message =
-        (data && typeof data === "object" && data.message) ||
-        (typeof data === "string" && data) ||
-        response.statusText ||
-        "Request failed";
-
-      throw createRequestError(response.status, message, data);
+      throw createRequestError(
+        response.status,
+        getResponseErrorMessage(data, response.statusText),
+        data,
+      );
     }
 
     return data;
@@ -171,13 +190,11 @@ export const postRequest = async (endpoint, data, options = {}) => {
     const responseData = isJsonResponse ? await response.json() : await response.text();
 
     if (!response.ok) {
-      const message =
-        (responseData && typeof responseData === "object" && responseData.message) ||
-        (typeof responseData === "string" && responseData) ||
-        response.statusText ||
-        "Request failed";
-
-      throw createRequestError(response.status, message, responseData);
+      throw createRequestError(
+        response.status,
+        getResponseErrorMessage(responseData, response.statusText),
+        responseData,
+      );
     }
 
     return responseData;
