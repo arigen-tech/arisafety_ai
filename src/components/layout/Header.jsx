@@ -4,11 +4,9 @@ import { FaEarthAmericas } from 'react-icons/fa6'
 import { PiUserSwitchFill } from 'react-icons/pi'
 import { Link } from 'react-router-dom'
 import { getRequest, postRequest } from '../../service/apiService' 
-import { translatePage } from '../../service/translationService'
 
 const ROLE_ENDPOINT = '/api/catalog/role'
 const SWITCH_ROLE_ENDPOINT = '/api/auth/switch-role'
-const LANGUAGE_STORAGE_KEY = 'selectedLanguage'
 
 const toArray = (json) => (Array.isArray(json) ? json : json?.data || json?.items || json?.rows || [])
 let rolesRequest
@@ -54,11 +52,6 @@ export const Header = ({
   const [rolesError, setRolesError] = useState('')
   const [roleSwitching, setRoleSwitching] = useState(false)
   const [roleSwitchError, setRoleSwitchError] = useState('')
-  const [selectedLanguage, setSelectedLanguage] = useState(
-    () => localStorage.getItem(LANGUAGE_STORAGE_KEY) || 'en'
-  )
-  const [languageLoading, setLanguageLoading] = useState(false)
-  const [languageError, setLanguageError] = useState('')
 
   const user = useMemo(getStoredUser, [])
 
@@ -95,54 +88,6 @@ export const Header = ({
     return () => { ignore = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-
-  useEffect(() => {
-    let ignore = false
-    let timeoutId
-    const observer = new MutationObserver(() => {
-      if (selectedLanguage === 'en') return
-      clearTimeout(timeoutId)
-      timeoutId = setTimeout(() => {
-        translatePage(selectedLanguage).catch((error) => {
-          if (!ignore) setLanguageError(error.message || 'Translation nahi ho paya')
-        })
-      }, 100)
-    })
-
-    observer.observe(document.body, { childList: true, characterData: true, subtree: true })
-
-    if (selectedLanguage !== 'en') {
-      setLanguageLoading(true)
-      translatePage(selectedLanguage).catch((error) => {
-        if (!ignore) setLanguageError(error.message || 'Translation nahi ho paya')
-      }).finally(() => {
-        if (!ignore) setLanguageLoading(false)
-      })
-    }
-
-    return () => {
-      ignore = true
-      clearTimeout(timeoutId)
-      observer.disconnect()
-    }
-  }, [selectedLanguage])
-
-  const handleLanguageSelect = async (event, targetLang) => {
-    event.preventDefault()
-    if (languageLoading) return
-
-    setLanguageLoading(true)
-    setLanguageError('')
-    try {
-      await translatePage(targetLang, { refresh: true })
-      localStorage.setItem(LANGUAGE_STORAGE_KEY, targetLang)
-      setSelectedLanguage(targetLang)
-    } catch (error) {
-      setLanguageError(error.message || 'Translation nahi ho paya')
-    } finally {
-      setLanguageLoading(false)
-    }
-  }
 
   const handleRoleSelect = async (e, role) => {
     e.preventDefault()
@@ -205,63 +150,42 @@ export const Header = ({
               </a>
               <div className="user-dropdown">
                 <div className="items">
-<<<<<<< HEAD
                   <a
                     href="#"
-                    className={language === "Hindi" ? "active" : ""}
-                    aria-current={language === "Hindi" ? "true" : undefined}
+                    className={language === 'Hindi' ? 'active' : ''}
+                    aria-current={language === 'Hindi' ? 'true' : undefined}
                     onClick={(e) => {
                       e.preventDefault()
-                      onLanguageSelect("Hindi")
+                      onLanguageSelect('Hindi')
                     }}
-=======
-                  {languageError && (
-                    <a href="#" onClick={(e) => e.preventDefault()}><span>{languageError}</span></a>
-                  )}
-                  <a
-                    href="#"
-                    aria-disabled={languageLoading}
-                    onClick={(e) => handleLanguageSelect(e, 'hi')}
->>>>>>> 41dccad (Header ObervationObservation and TranslationService api)
                   >
                     <span>&#x1F1EE;&#x1F1F3;</span>
                     <span>Hindi</span>
                   </a>
                   <a
                     href="#"
-<<<<<<< HEAD
-                    className={language === "English" ? "active" : ""}
-                    aria-current={language === "English" ? "true" : undefined}
+                    className={language === 'English' ? 'active' : ''}
+                    aria-current={language === 'English' ? 'true' : undefined}
                     onClick={(e) => {
                       e.preventDefault()
-                      onLanguageSelect("English")
+                      onLanguageSelect('English')
                     }}
-=======
-                    aria-disabled={languageLoading}
-                    onClick={(e) => handleLanguageSelect(e, 'en')}
->>>>>>> 41dccad (Header ObervationObservation and TranslationService api)
                   >
                     <span>&#x1F1FA;&#x1F1F8;</span>
                     <span>English</span>
                   </a>
                   <a
                     href="#"
-<<<<<<< HEAD
-                    className={language === "Marathi" ? "active" : ""}
-                    aria-current={language === "Marathi" ? "true" : undefined}
+                    className={language === 'Marathi' ? 'active' : ''}
+                    aria-current={language === 'Marathi' ? 'true' : undefined}
                     onClick={(e) => {
                       e.preventDefault()
-                      onLanguageSelect("Marathi")
+                      onLanguageSelect('Marathi')
                     }}
-=======
-                    aria-disabled={languageLoading}
-                    onClick={(e) => handleLanguageSelect(e, 'mr')}
->>>>>>> 41dccad (Header ObervationObservation and TranslationService api)
                   >
                     <span>&#x1F1EE;&#x1F1F3;</span>
                     <span>Marathi</span>
                   </a>
-<<<<<<< HEAD
                   {isTranslating && (
                     <a href="#" onClick={(e) => e.preventDefault()} role="status">
                       <span>Translating...</span>
@@ -272,8 +196,6 @@ export const Header = ({
                       <span>{translationError}</span>
                     </a>
                   )}
-=======
->>>>>>> 41dccad (Header ObervationObservation and TranslationService api)
                 </div>
               </div>
             </div>

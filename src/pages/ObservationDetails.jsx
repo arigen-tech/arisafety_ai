@@ -5,13 +5,9 @@ import { getRequest, postRequest, patchRequest, getImageRequest } from '../servi
 
 const DEPARTMENT_ENDPOINT = '/api/catalog/department'
 const RESPONSIBLE_PEOPLE_ENDPOINT = '/api/catalog/responsible_people'
-<<<<<<< HEAD
 const ROLE_ENDPOINT = '/api/catalog/role'
 const OBSERVATIONS_ENDPOINT = '/api/observations'
-=======
-const SUBMIT_ENDPOINT = '/api/observations/submit'
 const FIELD_SUBMISSION_ENDPOINT = '/api/observations'
->>>>>>> 41dccad (Header ObervationObservation and TranslationService api)
 const CAPA_RECOMMENDATIONS_ENDPOINT = '/api/observations' // + /{id}/capa-recommendations
 const getTodayDate = () => {
     const date = new Date()
@@ -98,12 +94,14 @@ export const ObservationDetails = () => {
         }
     })()
     const activeRoleName = localStorage.getItem('selectedRoleName') || user.role_name || (typeof user.role === 'string' ? user.role : '')
-    const isFieldOfficer = String(activeRoleName).toLowerCase().replace(/[^a-z]/g, '') === 'fieldofficer'
 
     const [aISuggestions] = useState(false);
     const [formSubmit, setFormSubmit] = useState(false);
     const [formReject, setFormReject] = useState(false);
     const [isTeamLead, setIsTeamLead] = useState(false);
+    const [isFieldOfficer, setIsFieldOfficer] = useState(
+        String(activeRoleName).toLowerCase().replace(/[^a-z]/g, '') === 'fieldofficer'
+    );
     const [roleResolved, setRoleResolved] = useState(false);
 
     const [departments, setDepartments] = useState([]);
@@ -211,18 +209,27 @@ export const ObservationDetails = () => {
             const activeRoleId = localStorage.getItem('selectedRoleId') || String(user.role_id ?? '')
             const storedRoleName = localStorage.getItem('selectedRoleName') || user.role_name || ''
             const matchesTeamLead = (name) => String(name).replace(/[\s_-]/g, '').toLowerCase() === 'teamlead'
+            const matchesFieldOfficer = (name) => String(name).replace(/[\s_-]/g, '').toLowerCase() === 'fieldofficer'
 
             try {
                 if (activeRoleId) {
                     const roles = toArray(await getRequest(ROLE_ENDPOINT))
                     const activeRole = roles.find((role) => String(role.role_id) === activeRoleId)
-                    if (!ignore) setIsTeamLead(matchesTeamLead(activeRole?.role_name || storedRoleName))
+                    if (!ignore) {
+                        const roleName = activeRole?.role_name || storedRoleName
+                        setIsTeamLead(matchesTeamLead(roleName))
+                        setIsFieldOfficer(matchesFieldOfficer(roleName))
+                    }
                 } else if (!ignore) {
                     setIsTeamLead(matchesTeamLead(storedRoleName))
+                    setIsFieldOfficer(matchesFieldOfficer(storedRoleName))
                 }
             } catch (error) {
                 console.error('Active role could not be resolved:', error)
-                if (!ignore) setIsTeamLead(matchesTeamLead(storedRoleName))
+                if (!ignore) {
+                    setIsTeamLead(matchesTeamLead(storedRoleName))
+                    setIsFieldOfficer(matchesFieldOfficer(storedRoleName))
+                }
             } finally {
                 if (!ignore) setRoleResolved(true)
             }
@@ -341,7 +348,34 @@ export const ObservationDetails = () => {
 
     // ---------- SUBMIT API (multipart/form-data) ----------
     const handleFormSubmit = async () => {
-<<<<<<< HEAD
+        if (isFieldOfficer) {
+            if (!observationId) {
+                alert('The observation ID could not be found.')
+                return
+            }
+
+            const submissionForm = new FormData()
+            submissionForm.append('remarks', submissionRemarks)
+            beforeImages.forEach((file) => submissionForm.append('pre_images', file))
+            afterImages.forEach((file) => submissionForm.append('post_images', file))
+
+            setLoading(true)
+            try {
+                await postRequest(
+                    `${FIELD_SUBMISSION_ENDPOINT}/${encodeURIComponent(observationId)}/field-submission`,
+                    submissionForm,
+                    { isMultipart: true }
+                )
+                setFormSubmit(true)
+            } catch (error) {
+                console.error('Field observation submission failed:', error)
+                alert(error.message || 'The field observation could not be submitted.')
+            } finally {
+                setLoading(false)
+            }
+            return
+        }
+
         const selectedDepartment = Number(selectedDepartmentId)
         const responsiblePersonId = Number(capa.responsiblePerson)
 
@@ -355,46 +389,6 @@ export const ObservationDetails = () => {
         }
         if (!Number.isInteger(responsiblePersonId) || responsiblePersonId <= 0) {
             alert('Please select a responsible person.')
-=======
-        if (isFieldOfficer) {
-            const observationId = [
-                pick(obs, ['observation_id', 'observationId']),
-                pick(obs, ['id']),
-                searchParams.get('id'),
-            ].find((id) => Number.isSafeInteger(Number(id)) && Number(id) > 0)
-
-            if (!observationId) {
-                alert('Observation ID nahi mil paayi')
-                return
-            }
-
-            const fd = new FormData()
-            fd.append('remarks', submissionRemarks)
-            beforeImages.forEach((file) => fd.append('pre_images', file))
-            afterImages.forEach((file) => fd.append('post_images', file))
-
-            setLoading(true)
-            try {
-                await postRequest(
-                    `${FIELD_SUBMISSION_ENDPOINT}/${Number(observationId)}/field-submission`,
-                    fd,
-                    { isMultipart: true }
-                )
-                setFormSubmit(true)
-            } catch (err) {
-                console.error('Field observation submission failed:', err)
-                alert(err.status === 403
-                    ? 'Permission denied. Check that this observation is assigned to your Field Officer account.'
-                    : getErrorMessage(err, 'Observation submit nahi ho paya'))
-            } finally {
-                setLoading(false)
-            }
-            return
-        }
-
-        if (!images.length) {
-            alert('Kam se kam ek photo select karo (images required hai)')
->>>>>>> 41dccad (Header ObervationObservation and TranslationService api)
             return
         }
 
@@ -813,44 +807,25 @@ export const ObservationDetails = () => {
                 <div className="card mb-20">
                     <h3 className='mb-10'>Upload Before &amp; After Evidence</h3>
 
-<<<<<<< HEAD
                     <div className="grid mb-15">
                         <div className="form-group">
                             <label>Before Correction</label>
-                            <input type="file" accept="image/*" />
+                            <input type="file" accept="image/*" multiple onChange={(event) => setBeforeImages(Array.from(event.target.files || []))} />
                         </div>
                         <div className="form-group">
                             <label>After Correction</label>
-                            <input type="file" accept="image/*" />
+                            <input type="file" accept="image/*" multiple onChange={(event) => setAfterImages(Array.from(event.target.files || []))} />
                         </div>
                         <div className="form-group">
                             <label>Remarks</label>
-                            <textarea maxLength={250}></textarea>
+                            <textarea maxLength={2000} value={submissionRemarks} onChange={(event) => setSubmissionRemarks(event.target.value)}></textarea>
                         </div>
-=======
-                <div className="grid mb-15">
-                    <div className="form-group">
-                        <label>Before Correction</label>
-                        <input type="file" accept="image/*" multiple onChange={(e) => setBeforeImages([...e.target.files])} />
-                    </div>
-                    <div className="form-group">
-                        <label>After Correction</label>
-                        <input type="file" accept="image/*" multiple onChange={(e) => setAfterImages([...e.target.files])} />
-                    </div>
-                    <div className="form-group">
-                        <label>Remarks</label>
-                        <textarea maxLength={2000} value={submissionRemarks} onChange={(e) => setSubmissionRemarks(e.target.value)}></textarea>
->>>>>>> 41dccad (Header ObervationObservation and TranslationService api)
                     </div>
                 </div>
             )}
 
             <div className="d-flex">
-<<<<<<< HEAD
-                <button type="button" className="btn btn-primary" onClick={handleFormSubmit} disabled={loading || detailLoading || Boolean(detailError)}>{loading ? 'Please wait...' : 'Assign'}</button>
-=======
-                <button type="button" className="btn btn-primary" onClick={handleFormSubmit} disabled={loading}>{loading ? 'Please wait...' : isFieldOfficer ? 'Submit' : 'Assigned'}</button>
->>>>>>> 41dccad (Header ObervationObservation and TranslationService api)
+                <button type="button" className="btn btn-primary" onClick={handleFormSubmit} disabled={loading || detailLoading || Boolean(detailError) || !roleResolved}>{loading ? 'Please wait...' : isFieldOfficer ? 'Submit' : 'Assign'}</button>
                 <button type="button" className="btn btn-rejected" onClick={handleFormRejection}>Reject</button>
             </div>
 
