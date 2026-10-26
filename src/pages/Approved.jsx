@@ -89,6 +89,7 @@ export const Approved = () => {
 
                             {!loading && !error && rows.map((r, i) => {
                                 const obsId = pick(r, ['observation_id', 'observationId', 'id'])
+                                const detailId = pick(r, ['id', 'observation_pk', 'observationId', 'observation_id'])
                                 const code = pick(r, ['observation_code', 'observation_no', 'observationCode'], obsId)
                                 return (
                                     <tr key={obsId || i}>
@@ -101,7 +102,7 @@ export const Approved = () => {
                                         <td>
                                             <div className="items-center">
                                                 <Link
-                                                    to={`/approved-observation-details/${obsId}`}
+                                                    to={`/approved-observation-details/${detailId}`}
                                                     className="btn-view"
                                                     title="View"
                                                 >

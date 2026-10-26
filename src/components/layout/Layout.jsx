@@ -4,10 +4,12 @@ import { Header } from "./Header"
 import { SideBarMenu } from "./SideBarMenu"
 import { useState } from "react"
 import { Loading } from "./Loading"
+import { usePageTranslation } from "../../hooks/usePageTranslation"
 
 export const Layout = () => {
   const [showSideMenu, setShowSideMenu] = useState(false);
   const navigation = useNavigation();
+  const { language, selectLanguage, isTranslating, translationError } = usePageTranslation();
 
   const handleShowMenu = () => {
     document.body.classList.add("openModal");
@@ -38,7 +40,13 @@ export const Layout = () => {
 
         <div className="main-container">
           {/* Header component here... */}
-          <Header onShowSideMenu={() => handleShowMenu()} />
+          <Header
+            onShowSideMenu={() => handleShowMenu()}
+            language={language}
+            onLanguageSelect={selectLanguage}
+            isTranslating={isTranslating}
+            translationError={translationError}
+          />
 
 
           <main>

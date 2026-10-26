@@ -57,7 +57,7 @@ const router = createBrowserRouter([
         element: <ObservationDetails />,
       },
       {
-        path: "/approved-observation-details",
+        path: "/approved-observation-details/:id",
         element: <ApprovedObservationDetails />,
       },
       {

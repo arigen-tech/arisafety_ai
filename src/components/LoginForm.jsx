@@ -31,12 +31,24 @@ export const LoginForm = () => {
             // apiService "token" key se read karti hai, isliye isi naam se save karo
             localStorage.setItem("token", data.access_token);
             localStorage.setItem("expires_at", data.expires_at);
+            const roleId = data.role_id ?? data.active_role_id ?? data.user?.role_id;
+            const roleName = data.role_name ?? data.active_role_name ?? data.user?.role_name;
+            localStorage.removeItem("selectedRoleId");
+            localStorage.removeItem("selectedRoleName");
+            if (roleId !== undefined && roleId !== null) {
+                localStorage.setItem("selectedRoleId", String(roleId));
+            }
+            if (roleName) {
+                localStorage.setItem("selectedRoleName", roleName);
+            }
             localStorage.setItem(
                 "user",
                 JSON.stringify({
                     user_id: data.user_id,
                     username: data.username,
                     name: data.name,
+                    role_id: roleId,
+                    role_name: roleName,
                 })
             );
 

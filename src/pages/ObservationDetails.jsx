@@ -1,11 +1,12 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { TitleBar } from '../components/UI/TitleBar'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
-import { getRequest, postRequest, getImageRequest } from '../service/apiService'
+import { getRequest, postRequest, patchRequest, getImageRequest } from '../service/apiService'
 
 const DEPARTMENT_ENDPOINT = '/api/catalog/department'
 const RESPONSIBLE_PEOPLE_ENDPOINT = '/api/catalog/responsible_people'
-const SUBMIT_ENDPOINT = '/api/observations/submit'
+const ROLE_ENDPOINT = '/api/catalog/role'
+const OBSERVATIONS_ENDPOINT = '/api/observations'
 const CAPA_RECOMMENDATIONS_ENDPOINT = '/api/observations' // + /{id}/capa-recommendations
 const getTodayDate = () => {
     const date = new Date()
@@ -32,7 +33,7 @@ const getDepartments = () => {
 const toResponsiblePeople = (response) => {
     const root = response?.data ?? response
     if (Array.isArray(root)) return root
-    for (const key of ['responsible_people', 'responsiblePeople', 'people', 'users', 'items', 'rows']) {
+    for (const key of ['field_officers', 'fieldOfficers', 'responsible_people', 'responsiblePeople', 'people', 'users', 'items', 'rows', 'results']) {
         if (Array.isArray(root?.[key])) return root[key]
     }
     return []
@@ -46,44 +47,6 @@ const pick = (obj, keys, fallback = '') => {
 
 // null / khali value ki jagah "-"
 const dash = (v) => (v === undefined || v === null || v === '' ? '-' : String(v))
-
-// FastAPI detail ko text mein badalta hai (string / array / object)
-// e.g. { "detail": "A supplied CAPA photo could not be analyzed." }
-const detailToText = (detail) => {
-    if (!detail) return ''
-    if (typeof detail === 'string') return detail
-    if (Array.isArray(detail)) {
-        return detail
-            .map((item) => `${item.loc?.slice(1).join('.') || 'error'}: ${item.msg}`)
-            .join('\n')
-    }
-    if (typeof detail === 'object') return detailToText(detail.detail) || detail.message || ''
-    return ''
-}
-
-// apiService error kisi bhi shape mein throw kare, message nikal leta hai
-const getErrorMessage = (error, fallback) => {
-    const candidates = [
-        error?.response?.detail,
-        error?.response?.data?.detail,
-        error?.response?.data,
-        error?.response,
-        error?.data?.detail,
-        error?.data,
-        error?.detail,
-    ]
-    for (const c of candidates) {
-        const text = detailToText(c)
-        if (text) return text
-    }
-    // kabhi error.message mein hi JSON string hoti hai: '{"detail":"..."}'
-    try {
-        const text = detailToText(JSON.parse(error?.message))
-        if (text) return text
-    } catch { /* JSON nahi hai */ }
-
-    return error?.message || fallback
-}
 
 // "27-Sep-2026 - 10:35am"
 const formatDateTime = (value) => {
@@ -116,17 +79,28 @@ export const ObservationDetails = () => {
     const [searchParams] = useSearchParams()
     const navigate = useNavigate()
     const location = useLocation()
-    const obs = location.state?.observation ?? null
+    const routeObservation = location.state?.observation ?? null
+    const [detailObservation, setDetailObservation] = useState(null)
+    const [detailLoading, setDetailLoading] = useState(true)
+    const [detailError, setDetailError] = useState('')
+    const obs = detailObservation ?? routeObservation
     const plantId = searchParams.get('plant_id') || pick(obs, ['plant_id', 'plantId'], '')
 
     const [aISuggestions] = useState(false);
     const [formSubmit, setFormSubmit] = useState(false);
     const [formReject, setFormReject] = useState(false);
+    const [isTeamLead, setIsTeamLead] = useState(false);
+    const [roleResolved, setRoleResolved] = useState(false);
 
     const [departments, setDepartments] = useState([]);
-    const [departmentId, setDepartmentId] = useState('');
+    const [departmentsLoading, setDepartmentsLoading] = useState(true);
+    const [departmentError, setDepartmentError] = useState('');
+    const [departmentId, setDepartmentId] = useState(
+        () => searchParams.get('department_id') || String(pick(obs, ['department_id', 'departmentId'], ''))
+    );
     const [responsiblePeople, setResponsiblePeople] = useState([]);
-    const responsiblePeopleRequests = useRef(new Map())
+    const [peopleLoading, setPeopleLoading] = useState(false);
+    const [peopleError, setPeopleError] = useState('');
 
     const [preview, setPreview] = useState(null);   // { type, url, name } evidence preview
 
@@ -145,7 +119,101 @@ export const ObservationDetails = () => {
     const handleCapaChange = (e) =>
         setCapa((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
-    const selectedDepartmentId = departmentId || searchParams.get('department_id') || String(pick(obs, ['department_id', 'departmentId'], ''))
+    const observationId = [
+        searchParams.get('id'),
+        pick(routeObservation, ['id']),
+        pick(routeObservation, ['observation_id', 'observationId']),
+    ].find((value) => Number.isSafeInteger(Number(value)) && Number(value) > 0)
+    const selectedDepartmentId = departmentId || String(pick(obs, ['department_id', 'departmentId'], ''))
+
+    useEffect(() => {
+        let ignore = false
+
+        const loadObservationDetails = async () => {
+            setDetailLoading(true)
+            setDetailError('')
+            try {
+                const response = await getRequest(`${OBSERVATIONS_ENDPOINT}/${encodeURIComponent(observationId)}`)
+                const loadedObservation = response?.data?.observation
+                    ?? response?.observation
+                    ?? response?.data
+                    ?? response
+                if (ignore) return
+
+                setDetailObservation(loadedObservation)
+                const savedCapa = loadedObservation?.capa_recommendation
+                    ?? loadedObservation?.capaRecommendation
+                    ?? {}
+                const savedDepartmentId = pick(
+                    savedCapa,
+                    ['department_id', 'departmentId'],
+                    pick(loadedObservation, ['department_id', 'departmentId'], '')
+                )
+                if (savedDepartmentId !== '') setDepartmentId(String(savedDepartmentId))
+
+                setCapa((previous) => ({
+                    ...previous,
+                    correctiveAction: pick(savedCapa, ['corrective_action', 'correctiveAction'], previous.correctiveAction),
+                    preventiveAction: pick(savedCapa, ['preventive_action', 'preventiveAction'], previous.preventiveAction),
+                    responsiblePerson: String(pick(savedCapa, ['responsible_person_id', 'responsiblePersonId'], previous.responsiblePerson)),
+                    targetDate: pick(savedCapa, ['target_date', 'targetDate'], previous.targetDate),
+                    priority: pick(savedCapa, ['priority'], previous.priority),
+                }))
+                setAiSuggestionText(pick(savedCapa, ['ai_suggestions', 'aiSuggestions'], ''))
+            } catch (error) {
+                console.error('Observation details could not be loaded:', error)
+                if (!ignore) {
+                    setDetailError(error.message || 'Could not load the latest observation details.')
+                }
+            } finally {
+                if (!ignore) setDetailLoading(false)
+            }
+        }
+
+        if (observationId) {
+            loadObservationDetails()
+        } else {
+            setDetailError('The observation ID could not be found.')
+            setDetailLoading(false)
+        }
+
+        return () => { ignore = true }
+    }, [observationId])
+
+    useEffect(() => {
+        let ignore = false
+
+        const resolveActiveRole = async () => {
+            let user = {}
+            try {
+                user = JSON.parse(localStorage.getItem('user') || '{}')
+            } catch (error) {
+                console.error('Stored user data could not be read:', error)
+            }
+
+            const activeRoleId = localStorage.getItem('selectedRoleId') || String(user.role_id ?? '')
+            const storedRoleName = localStorage.getItem('selectedRoleName') || user.role_name || ''
+            const matchesTeamLead = (name) => String(name).replace(/[\s_-]/g, '').toLowerCase() === 'teamlead'
+
+            try {
+                if (activeRoleId) {
+                    const roles = toArray(await getRequest(ROLE_ENDPOINT))
+                    const activeRole = roles.find((role) => String(role.role_id) === activeRoleId)
+                    if (!ignore) setIsTeamLead(matchesTeamLead(activeRole?.role_name || storedRoleName))
+                } else if (!ignore) {
+                    setIsTeamLead(matchesTeamLead(storedRoleName))
+                }
+            } catch (error) {
+                console.error('Active role could not be resolved:', error)
+                if (!ignore) setIsTeamLead(matchesTeamLead(storedRoleName))
+            } finally {
+                if (!ignore) setRoleResolved(true)
+            }
+        }
+
+        resolveActiveRole()
+        return () => { ignore = true }
+    }, [])
 
     // ---------- Department dropdown (GET API) ----------
     useEffect(() => {
@@ -155,31 +223,45 @@ export const ObservationDetails = () => {
                 const data = await getDepartments()
                 if (!ignore) setDepartments(data)
             } catch (err) {
-                if (!ignore) console.error('Department load failed:', err)
+                console.error('Department load failed:', err)
+                if (!ignore) setDepartmentError('Departments could not be loaded. Please try again.')
+            } finally {
+                if (!ignore) setDepartmentsLoading(false)
             }
         }
         loadDepartments()
         return () => { ignore = true }
     }, [])
 
-    const loadResponsiblePeople = async () => {
-        const requestDepartmentId = selectedDepartmentId || '1'
-        const requestPlantId = plantId || '1'
-        const endpoint = `${RESPONSIBLE_PEOPLE_ENDPOINT}?department_id=${encodeURIComponent(requestDepartmentId)}&plant_id=${encodeURIComponent(requestPlantId)}`
-        try {
-            if (!responsiblePeopleRequests.current.has(endpoint)) {
-                responsiblePeopleRequests.current.set(
-                    endpoint,
-                    getRequest(endpoint).then(toResponsiblePeople)
-                )
-            }
-            setResponsiblePeople(await responsiblePeopleRequests.current.get(endpoint))
-        } catch (err) {
-            responsiblePeopleRequests.current.delete(endpoint)
-            console.error('Responsible people load failed:', err)
-            setResponsiblePeople([])
+    useEffect(() => {
+        let ignore = false
+
+        if (!selectedDepartmentId) {
+            return () => { ignore = true }
         }
-    }
+
+        const requestPlantId = plantId || '1'
+        const endpoint = `${RESPONSIBLE_PEOPLE_ENDPOINT}?department_id=${encodeURIComponent(selectedDepartmentId)}&plant_id=${encodeURIComponent(requestPlantId)}`
+        const loadResponsiblePeople = async () => {
+            setPeopleLoading(true)
+            setPeopleError('')
+            try {
+                const people = toResponsiblePeople(await getRequest(endpoint))
+                if (!ignore) setResponsiblePeople(people)
+            } catch (error) {
+                console.error('Responsible people load failed:', error)
+                if (!ignore) {
+                    setResponsiblePeople([])
+                    setPeopleError('Responsible people could not be loaded. Please try again.')
+                }
+            } finally {
+                if (!ignore) setPeopleLoading(false)
+            }
+        }
+
+        loadResponsiblePeople()
+        return () => { ignore = true }
+    }, [selectedDepartmentId, plantId])
 
     // preview ka blob URL band hone par free karo
     const closePreview = () => {
@@ -198,7 +280,7 @@ export const ObservationDetails = () => {
             })
         } catch (err) {
             console.error('Evidence load failed:', err)
-            alert('File open nahi ho paayi')
+            alert('The evidence file could not be opened.')
         }
     }
 
@@ -242,28 +324,80 @@ export const ObservationDetails = () => {
 
     // ---------- SUBMIT API (multipart/form-data) ----------
     const handleFormSubmit = async () => {
-        if (!images.length) {
-            alert('Kam se kam ek photo select karo (images required hai)')
+        const selectedDepartment = Number(selectedDepartmentId)
+        const responsiblePersonId = Number(capa.responsiblePerson)
+
+        if (!observationId) {
+            alert('The observation ID could not be found.')
+            return
+        }
+        if (!Number.isInteger(selectedDepartment) || selectedDepartment <= 0) {
+            alert('Please select a department.')
+            return
+        }
+        if (!Number.isInteger(responsiblePersonId) || responsiblePersonId <= 0) {
+            alert('Please select a responsible person.')
             return
         }
 
-        const fd = new FormData()
-        images.forEach((file) => fd.append('images', file))   // same key repeat
-        fd.append('observationType', obs?.observation_type || 'unsafe')
-        fd.append('description', capa.correctiveAction || obs?.description || '')
-        fd.append('language', 'English')
-        if (obs?.business_unit_id) fd.append('business_unit_id', obs.business_unit_id)
-        if (obs?.plant_id) fd.append('plant_id', obs.plant_id)
-        if (obs?.location_id) fd.append('location_id', obs.location_id)
+        const priority = capa.priority ? capa.priority.toUpperCase() : ''
+        const updateForm = new FormData()
+        updateForm.append('field_officer_id', String(responsiblePersonId))
+        updateForm.append('corrective_action', capa.correctiveAction)
+        updateForm.append('preventive_action', capa.preventiveAction)
+        updateForm.append('responsible_person_id', String(responsiblePersonId))
+        updateForm.append('department_id', String(selectedDepartment))
+        if (capa.targetDate) updateForm.append('target_date', capa.targetDate)
+        if (priority) updateForm.append('priority', priority)
+        if (v.recAction !== '-') updateForm.append('recommended_action', v.recAction)
+        if (v.risk !== '-' && ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'].includes(v.risk.toUpperCase())) {
+            updateForm.append('risk_priority', v.risk.toUpperCase())
+        }
+        if (v.recType !== '-') updateForm.append('recommended_action_type', v.recType)
+        if (v.recText !== '-') updateForm.append('ai_recommendation', v.recText)
+        if (v.finding !== '-') updateForm.append('hazard_type', v.finding)
+        images.forEach((file) => updateForm.append('photos', file))
+
+        const capaRecommendation = {
+            corrective_action: capa.correctiveAction,
+            preventive_action: capa.preventiveAction,
+            responsible_person_id: responsiblePersonId,
+            department_id: selectedDepartment,
+            ...(capa.targetDate ? { target_date: capa.targetDate } : {}),
+            ...(priority ? { priority } : {}),
+            ...(aiSuggestionText ? { ai_suggestions: aiSuggestionText } : {}),
+        }
 
         setLoading(true)
+        let updateSucceeded = false
         try {
-            const result = await postRequest(SUBMIT_ENDPOINT, fd, { isMultipart: true })
-            setAiResult(result)      // observationId, riskLevel, summary, violations ...
-            setFormSubmit(true)      // success popup
+            const updateResult = await patchRequest(
+                `${OBSERVATIONS_ENDPOINT}/${encodeURIComponent(observationId)}/update`,
+                updateForm,
+                { isMultipart: true }
+            )
+            updateSucceeded = true
+
+            const assignResult = await postRequest(
+                `${OBSERVATIONS_ENDPOINT}/${encodeURIComponent(observationId)}/assign`,
+                {
+                    field_officer_id: responsiblePersonId,
+                    capa_recommendation: capaRecommendation,
+                }
+            )
+
+            setAiResult({
+                observationId: assignResult?.observation_id ?? updateResult?.observation_id ?? observationId,
+                riskLevel: assignResult?.risk_level ?? updateResult?.risk_level ?? v.risk,
+            })
+            setFormSubmit(true)
         } catch (err) {
-            console.error(err)
-            alert(getErrorMessage(err, 'Observation submit nahi ho paya'))
+            console.error(updateSucceeded ? 'Observation assignment failed after updating:' : 'Observation update failed:', err)
+            const detail = err?.response?.detail
+            const message = typeof detail === 'string' ? detail : err?.message
+            alert(updateSucceeded
+                ? `Observation details were updated, but assignment failed. ${message || 'Please retry assignment.'}`
+                : `The observation could not be updated. ${message || 'Please try again.'}`)
         } finally {
             setLoading(false)
         }
@@ -280,15 +414,15 @@ export const ObservationDetails = () => {
         const selectedDepartment = Number(selectedDepartmentId)
 
         if (!observationId) {
-            alert('Observation ID nahi mil paayi')
+            alert('The observation ID could not be found.')
             return
         }
         if (!Number.isInteger(responsiblePersonId) || responsiblePersonId <= 0) {
-            alert('Responsible Person select karo')
+            alert('Please select a responsible person.')
             return
         }
         if (!Number.isInteger(selectedDepartment) || selectedDepartment <= 0) {
-            alert('Department select karo')
+            alert('Please select a department.')
             return
         }
 
@@ -314,8 +448,7 @@ export const ObservationDetails = () => {
             }))
         } catch (err) {
             console.error('CAPA recommendation request failed:', err)
-            // e.g. "A supplied CAPA photo could not be analyzed."
-            alert(getErrorMessage(err, 'CAPA recommendation nahi mil paayi'))
+            alert('A CAPA recommendation could not be generated. Please try again.')
         } finally {
             setAnalyzing(false)
         }
@@ -339,6 +472,8 @@ export const ObservationDetails = () => {
                 <button type='button' className="btnBack" onClick={() => navigate(-1)}></button>
                 <TitleBar title="Observation Details" />
             </div>
+            {detailLoading && <div className="card text-center" role="status">Loading the latest observation details...</div>}
+            {detailError && <div className="card text-center" role="alert">{detailError}</div>}
 
             <div className="card mb-20">
 
@@ -530,32 +665,60 @@ export const ObservationDetails = () => {
                         <textarea name="preventiveAction" value={capa.preventiveAction} onChange={handleCapaChange}></textarea>
                     </div>
                     <div className="form-group">
-                        <label>Responsible Person </label>
-                        <select name="responsiblePerson" value={capa.responsiblePerson} onFocus={loadResponsiblePeople} onChange={handleCapaChange}>
-                            <option value="">Select</option>
-                            {responsiblePeople.map((person) => {
-                                const userId = pick(person, ['user_id', 'userId', 'id', 'value'])
-                                const name = pick(person, ['name', 'full_name', 'fullName', 'user_name', 'username', 'employee_name'])
-                                if (!userId || !name) return null
-                                return <option key={userId} value={userId}>{name}</option>
-                            })}
-                        </select>
-                    </div>
-                    <div className="form-group">
                         <label>Department </label>
-                        <select value={selectedDepartmentId} onChange={(e) => {
-                            setDepartmentId(e.target.value)
-                            setResponsiblePeople([])
-                            setCapa((prev) => ({ ...prev, responsiblePerson: '' }))
-                        }}>
-                            <option value="">Select</option>
+                        <select
+                            value={selectedDepartmentId}
+                            onChange={(event) => {
+                                setDepartmentId(event.target.value)
+                                setResponsiblePeople([])
+                                setPeopleError('')
+                                setCapa((prev) => ({ ...prev, responsiblePerson: '' }))
+                            }}
+                            disabled={departmentsLoading || Boolean(departmentError)}
+                        >
+                            <option value="">
+                                {departmentsLoading ? 'Loading departments...' : departmentError || 'Select'}
+                            </option>
                             {departments.map((d, i) => {
                                 const dId = pick(d, ['id', 'department_id', 'departmentId'], i)
                                 const dName = pick(d, ['name', 'department_name', 'departmentName', 'dept_name'])
                                 return <option key={dId} value={dId}>{dName}</option>
                             })}
                         </select>
-
+                        {departmentError && <small role="alert">{departmentError}</small>}
+                    </div>
+                    <div className="form-group">
+                        <label>Responsible Person </label>
+                        <select
+                            name="responsiblePerson"
+                            value={capa.responsiblePerson}
+                            onChange={handleCapaChange}
+                            disabled={!selectedDepartmentId || peopleLoading || Boolean(peopleError)}
+                        >
+                            <option value="">
+                                {!selectedDepartmentId
+                                    ? 'Select department first'
+                                    : peopleLoading
+                                        ? 'Loading responsible people...'
+                                        : peopleError || 'Select'}
+                            </option>
+                            {capa.responsiblePerson &&
+                                !responsiblePeople.some((person) =>
+                                    String(pick(person, ['user_id', 'userId', 'id', 'value'])) === capa.responsiblePerson
+                                ) &&
+                                pick(obs?.capa_recommendation, ['responsible_person_name', 'responsiblePersonName']) && (
+                                    <option value={capa.responsiblePerson}>
+                                        {pick(obs.capa_recommendation, ['responsible_person_name', 'responsiblePersonName'])}
+                                    </option>
+                                )}
+                            {responsiblePeople.map((person, index) => {
+                                const userId = pick(person, ['user_id', 'userId', 'id', 'value'], index)
+                                const name = pick(person, ['name', 'full_name', 'fullName', 'user_name', 'username', 'employee_name'])
+                                if (userId === undefined || userId === null || !name) return null
+                                return <option key={userId} value={userId}>{name}</option>
+                            })}
+                        </select>
+                        {peopleError && <small role="alert">{peopleError}</small>}
                     </div>
                     <div className="form-group">
                         <label>Target Date</label>
@@ -588,27 +751,29 @@ export const ObservationDetails = () => {
                 </div>}
             </div>
 
-            <div className="card mb-20">
-                <h3 className='mb-10'>Upload Before &amp; After Evidence</h3>
+            {roleResolved && !isTeamLead && (
+                <div className="card mb-20">
+                    <h3 className='mb-10'>Upload Before &amp; After Evidence</h3>
 
-                <div className="grid mb-15">
-                    <div className="form-group">
-                        <label>Before Correction</label>
-                        <input type="file" accept="image/*" />
-                    </div>
-                    <div className="form-group">
-                        <label>After Correction</label>
-                        <input type="file" accept="image/*" />
-                    </div>
-                    <div className="form-group">
-                        <label>Remarks</label>
-                        <textarea maxLength={250}></textarea>
+                    <div className="grid mb-15">
+                        <div className="form-group">
+                            <label>Before Correction</label>
+                            <input type="file" accept="image/*" />
+                        </div>
+                        <div className="form-group">
+                            <label>After Correction</label>
+                            <input type="file" accept="image/*" />
+                        </div>
+                        <div className="form-group">
+                            <label>Remarks</label>
+                            <textarea maxLength={250}></textarea>
+                        </div>
                     </div>
                 </div>
-            </div>
+            )}
 
             <div className="d-flex">
-                <button type="button" className="btn btn-primary" onClick={handleFormSubmit} disabled={loading}>{loading ? 'Please wait...' : 'Assigned'}</button>
+                <button type="button" className="btn btn-primary" onClick={handleFormSubmit} disabled={loading || detailLoading || Boolean(detailError)}>{loading ? 'Please wait...' : 'Assign'}</button>
                 <button type="button" className="btn btn-rejected" onClick={handleFormRejection}>Reject</button>
             </div>
 

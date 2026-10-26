@@ -40,7 +40,13 @@ const getStoredUser = () => {
   }
 }
 
-export const Header = ({ onShowSideMenu }) => {
+export const Header = ({
+  onShowSideMenu,
+  language,
+  onLanguageSelect,
+  isTranslating,
+  translationError,
+}) => {
   const [roles, setRoles] = useState([])
   const [rolesLoading, setRolesLoading] = useState(true)
   const [rolesError, setRolesError] = useState('')
@@ -144,14 +150,52 @@ export const Header = ({ onShowSideMenu }) => {
               </a>
               <div className="user-dropdown">
                 <div className="items">
-                  <a href="#" onClick={(e) => e.preventDefault()}>
+                  <a
+                    href="#"
+                    className={language === "Hindi" ? "active" : ""}
+                    aria-current={language === "Hindi" ? "true" : undefined}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      onLanguageSelect("Hindi")
+                    }}
+                  >
                     <span>&#x1F1EE;&#x1F1F3;</span>
                     <span>Hindi</span>
                   </a>
-                  <a href="#" onClick={(e) => e.preventDefault()}>
+                  <a
+                    href="#"
+                    className={language === "English" ? "active" : ""}
+                    aria-current={language === "English" ? "true" : undefined}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      onLanguageSelect("English")
+                    }}
+                  >
                     <span>&#x1F1FA;&#x1F1F8;</span>
                     <span>English</span>
                   </a>
+                  <a
+                    href="#"
+                    className={language === "Marathi" ? "active" : ""}
+                    aria-current={language === "Marathi" ? "true" : undefined}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      onLanguageSelect("Marathi")
+                    }}
+                  >
+                    <span>&#x1F1EE;&#x1F1F3;</span>
+                    <span>Marathi</span>
+                  </a>
+                  {isTranslating && (
+                    <a href="#" onClick={(e) => e.preventDefault()} role="status">
+                      <span>Translating...</span>
+                    </a>
+                  )}
+                  {translationError && (
+                    <a href="#" onClick={(e) => e.preventDefault()} role="alert">
+                      <span>{translationError}</span>
+                    </a>
+                  )}
                 </div>
               </div>
             </div>

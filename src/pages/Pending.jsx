@@ -39,7 +39,6 @@ export const Pending = () => {
     const loadPending = async () => {
       try {
         const res = await getRequest("/api/observations/pending"); // was getData
-        console.log("pending response:", res); // remove after the mapping is correct
 
         // Works for [..] or { items | data | results: [..] }
         const list = Array.isArray(res)
@@ -49,6 +48,7 @@ export const Pending = () => {
         if (!ignore) setRows(list.map(mapObservation));
       } catch (err) {
         if (ignore) return;
+        console.error("Pending observations could not be loaded:", err);
 
         // Token missing or expired
         if (err.status === 401) {
@@ -61,7 +61,9 @@ export const Pending = () => {
         Swal.fire({
           icon: "error",
           title: "Could not load observations",
-          text: err.status === undefined ? "Unable to connect to the server" : err.message,
+          text: err.status === undefined
+            ? "Unable to connect to the server. Please try again."
+            : "Unable to load observations. Please try again.",
         });
       } finally {
         if (!ignore) setLoading(false);

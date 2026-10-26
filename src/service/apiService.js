@@ -187,6 +187,39 @@ export const postRequest = async (endpoint, data, options = {}) => {
   }
 };
 
+export const patchRequest = async (endpoint, data, options = {}) => {
+  try {
+    const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+    const isMultipart = options.isMultipart;
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+      method: "PATCH",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(isMultipart ? {} : { "Content-Type": "application/json" }),
+      },
+      body: isMultipart ? data : JSON.stringify(data),
+    });
+
+    const isJsonResponse = response.headers.get("content-type")?.includes("application/json");
+    const responseData = isJsonResponse ? await response.json() : await response.text();
+
+    if (!response.ok) {
+      const message =
+        (responseData && typeof responseData === "object" && responseData.detail) ||
+        (responseData && typeof responseData === "object" && responseData.message) ||
+        (typeof responseData === "string" && responseData) ||
+        response.statusText ||
+        "Request failed";
+      throw createRequestError(response.status, message, responseData);
+    }
+
+    return responseData;
+  } catch (error) {
+    console.error("PATCH Error:", error);
+    throw error;
+  }
+};
+
 /**
  * Function to call POST API for PUBLIC (whitelisted / permitAll) endpoints.
  * Never sends an Authorization header — use for login, OTP, signup, etc.
