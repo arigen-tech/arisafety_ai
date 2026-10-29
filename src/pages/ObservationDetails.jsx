@@ -119,7 +119,7 @@ export const ObservationDetails = () => {
     const [preview, setPreview] = useState(null);   // { type, url, name } evidence preview
 
     const [loading, setLoading] = useState(false);
-    const [images, setImages] = useState([]);
+    const [fieldSubmissionComplete, setFieldSubmissionComplete] = useState(false);
     const [beforeImages, setBeforeImages] = useState([]);
     const [afterImages, setAfterImages] = useState([]);
     const [submissionRemarks, setSubmissionRemarks] = useState('');
@@ -377,11 +377,20 @@ export const ObservationDetails = () => {
 
             setLoading(true)
             try {
-                await postRequest(
+                const response = await postRequest(
                     `${FIELD_SUBMISSION_ENDPOINT}/${encodeURIComponent(observationId)}/field-submission`,
                     submissionForm,
                     { isMultipart: true }
                 )
+                const submittedObservation = response?.data?.observation
+                    ?? response?.observation
+                    ?? response?.data
+                    ?? response
+                if (submittedObservation && typeof submittedObservation === 'object') {
+                    setDetailObservation(submittedObservation)
+                }
+                setFieldSubmissionComplete(true)
+                setSuccessMessage('Observation submitted successfully.')
                 setFormSubmit(true)
             } catch (error) {
                 console.error('Field observation submission failed:', error)
@@ -424,8 +433,6 @@ export const ObservationDetails = () => {
         if (v.recType !== '-') updateForm.append('recommended_action_type', v.recType)
         if (v.recText !== '-') updateForm.append('ai_recommendation', v.recText)
         if (v.finding !== '-') updateForm.append('hazard_type', v.finding)
-        images.forEach((file) => updateForm.append('photos', file))
-
         const capaRecommendation = {
             corrective_action: capa.correctiveAction,
             preventive_action: capa.preventiveAction,
@@ -472,43 +479,6 @@ export const ObservationDetails = () => {
         }
     }
 
-    const handleFieldSubmission = async () => {
-        if (!observationId) {
-            alert('The observation ID could not be found.')
-            return
-        }
-
-        const formData = new FormData()
-        formData.append('remarks', fieldRemarks)
-        preImages.forEach((file) => formData.append('pre_images', file))
-        postImages.forEach((file) => formData.append('post_images', file))
-
-        setLoading(true)
-        try {
-            const response = await postRequest(
-                `${OBSERVATIONS_ENDPOINT}/${encodeURIComponent(observationId)}/field-submission`,
-                formData,
-                { isMultipart: true }
-            )
-            const submittedObservation = response?.data?.observation
-                ?? response?.observation
-                ?? response?.data
-                ?? response
-            setDetailObservation(submittedObservation)
-            setFieldSubmissionComplete(true)
-            setSuccessMessage('Observation submitted successfully.')
-            setFormSubmit(true)
-        } catch (error) {
-            console.error('Field observation submission failed:', error)
-            const detail = error?.response?.detail
-            alert(typeof detail === 'string'
-                ? detail
-                : error?.message || 'The field observation could not be submitted. Please try again.')
-        } finally {
-            setLoading(false)
-        }
-    }
-
     // ---------- CAPA Recommendation (POST /api/observations/{id}/capa-recommendations) ----------
     const handleCapaRecommendation = async () => {
         const observationId = [
@@ -537,8 +507,6 @@ export const ObservationDetails = () => {
         fd.append('department_id', String(selectedDepartment))
         fd.append('target_date', capa.targetDate)
         if (capa.priority) fd.append('priority', capa.priority.toUpperCase())
-        images.forEach((file) => fd.append('photos', file))   // same key repeat
-
         setAnalyzing(true)
         try {
             const result = await postRequest(
@@ -794,7 +762,57 @@ export const ObservationDetails = () => {
                 </div>
             </div>
 
-            {!teamLeadReviewReady && <div className="card mb-20">
+            <div className="card mb-20">
+                {(isFieldOfficer || teamLeadReviewReady) ? (
+                    <>
+                        <h3 className='mb-10'>
+                            {teamLeadReviewReady ? 'CAPA Recommendation' : 'CAPA Recommendation from Team Lead'}
+                        </h3>
+                        {isFieldOfficer && <p className="mb-15">This recommendation was provided by the Team Lead.</p>}
+                        <div className="grid mb-15">
+                            <div className="form-group">
+                                <label>Corrective Action</label>
+                                <textarea disabled readOnly value={capa.correctiveAction || '-'} />
+                            </div>
+                            <div className="form-group">
+                                <label>Preventive Action</label>
+                                <textarea disabled readOnly value={capa.preventiveAction || '-'} />
+                            </div>
+                            <div className="form-group">
+                                <label>Department</label>
+                                <input
+                                    type="text"
+                                    disabled
+                                    readOnly
+                                    value={pick(obs?.capa_recommendation ?? obs?.capaRecommendation, ['department', 'department_name', 'departmentName'], pick(obs, ['department_name', 'department'], '-'))}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Responsible Person</label>
+                                <input
+                                    type="text"
+                                    disabled
+                                    readOnly
+                                    value={pick(obs?.capa_recommendation ?? obs?.capaRecommendation, ['responsible_person_name', 'responsiblePersonName'], capa.responsiblePerson || '-')}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Target Date</label>
+                                <input type="text" disabled readOnly value={capa.targetDate || '-'} />
+                            </div>
+                            <div className="form-group">
+                                <label>Priority</label>
+                                <input type="text" disabled readOnly value={capa.priority || '-'} />
+                            </div>
+                            {aiSuggestionText && (
+                                <div className="form-group">
+                                    <label>AI Suggestions</label>
+                                    <textarea disabled readOnly value={aiSuggestionText} />
+                                </div>
+                            )}
+                        </div>
+                    </>
+                ) : <>
                 <h3 className='mb-10'>CAPA Action</h3>
 
                 <div className="grid mb-15">
@@ -875,10 +893,6 @@ export const ObservationDetails = () => {
                             <option value="Low">Low</option>
                         </select>
                     </div>
-                    <div className="form-group">
-                        <label>Photos</label>
-                        <input type="file" accept="image/*" multiple onChange={(e) => setImages([...e.target.files])} />
-                    </div>
                     <div className="btn-group itemEnd">
                         <button type="button" className="btn btn-primary" onClick={handleCapaRecommendation} disabled={analyzing}>
                             {analyzing ? 'Analyzing...' : 'CAPA Recommendation'}
@@ -891,7 +905,8 @@ export const ObservationDetails = () => {
                         <textarea rows={4} value={aiSuggestionText} onChange={(e) => setAiSuggestionText(e.target.value)}></textarea>
                     </div>
                 </div>}
-            </div>}
+                </>}
+            </div>
 
             {roleResolved && (isFieldOfficer || isTeamLead) && isFieldSubmissionComplete && (
                 <div className="card mb-20">
@@ -952,8 +967,38 @@ export const ObservationDetails = () => {
             )}
 
             <div className="d-flex">
-                <button type="button" className="btn btn-primary" onClick={handleFormSubmit} disabled={loading || detailLoading || Boolean(detailError) || !roleResolved}>{loading ? 'Please wait...' : isFieldOfficer ? 'Submit' : 'Assign'}</button>
-                <button type="button" className="btn btn-rejected" onClick={handleFormRejection}>Reject</button>
+                {teamLeadReviewReady ? (
+                    <>
+                        <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={() => handleTeamLeadDecision('APPROVED')}
+                            disabled={loading || detailLoading || Boolean(detailError)}
+                        >
+                            {loading ? 'Please wait...' : 'Approve'}
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn-rejected"
+                            onClick={handleFormRejection}
+                            disabled={loading || detailLoading || Boolean(detailError)}
+                        >
+                            Reject
+                        </button>
+                    </>
+                ) : (
+                    <>
+                        <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={handleFormSubmit}
+                            disabled={loading || detailLoading || Boolean(detailError) || !roleResolved || (isFieldOfficer && isFieldSubmissionComplete)}
+                        >
+                            {loading ? 'Please wait...' : isFieldOfficer ? 'Submit' : 'Assign'}
+                        </button>
+                        {!isFieldOfficer && <button type="button" className="btn btn-rejected" onClick={handleFormRejection}>Reject</button>}
+                    </>
+                )}
             </div>
 
             {/* Evidence preview popup */}
@@ -978,7 +1023,7 @@ export const ObservationDetails = () => {
                     <div className="modalBody">
                         <div className='checkMark'>
                             <img src="images/icons/check-mark-success-large.gif" alt="Check icon" />
-                            <p className='text-center'>{isFieldOfficer ? 'Observation successfully submitted.' : 'Observation successfully Assigned.'}</p>
+                            <p className='text-center'>{successMessage || (isFieldOfficer ? 'Observation successfully submitted.' : 'Observation successfully assigned.')}</p>
                             {aiResult && <p className='text-center'>ID: {aiResult.observationId} | Risk: {aiResult.riskLevel}</p>}
                             <button className='btn btn-primary' onClick={handleFormClose}>OK</button>
                         </div>
