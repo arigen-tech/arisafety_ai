@@ -1885,26 +1885,6 @@ p.small {
     display: block;
 }
 
-.chatBot-wp .closeBtn {
-    padding: 0;
-    width: 34px;
-    height: 34px;
-    position: absolute;
-    right: -25px;
-    top: -25px;
-    border: 0;
-    background: none;
-    cursor: pointer;
-}
-
-.chatBot-wp .closeBtn:hover {
-    opacity: .7;
-}
-
-.chatBot-wp .closeBtn img {
-    width: 100%;
-}
-
 .chatBot-wp .title-wp-chat {
     display: block;
     background: #2565AD;
@@ -1935,8 +1915,6 @@ p.small {
     visibility: hidden;
 }
 
-
-
 .animated1 {
     -webkit-animation-duration: 1.5s;
     animation-duration: 1.5s;
@@ -1949,24 +1927,20 @@ p.small {
 }
 
 @-webkit-keyframes bounce1 {
-
     0%,
     100% {
         -webkit-transform: translateY(0)
     }
-
     50% {
         -webkit-transform: translateY(-5px)
     }
 }
 
 @keyframes bounce1 {
-
     0%,
     100% {
         transform: translateY(0)
     }
-
     50% {
         transform: translateY(-5px)
     }
@@ -1977,25 +1951,12 @@ p.small {
     animation-name: bounce1
 }
 
-
 .animated {
   -webkit-animation-duration: 1s;
   animation-duration: 1s;
   -webkit-animation-fill-mode: both;
   animation-fill-mode: both;
 }
-
-@media (print), (prefers-reduced-motion: reduce) {
-  .animated {
-    -webkit-animation-duration: 1ms !important;
-    animation-duration: 1ms !important;
-    -webkit-transition-duration: 1ms !important;
-    transition-duration: 1ms !important;
-    -webkit-animation-iteration-count: 1 !important;
-    animation-iteration-count: 1 !important;
-  }
-}
-
 
 @-webkit-keyframes pulse {
   from {
