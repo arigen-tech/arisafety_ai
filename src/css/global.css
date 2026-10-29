@@ -849,6 +849,7 @@ header {
 
     .noLine {
         padding-left: 12px;
+
         &::before {
             width: 0;
         }
@@ -1393,6 +1394,7 @@ p.small {
     padding: 0;
     overflow-x: auto;
     margin-bottom: 15px;
+    max-height: 500px;
 
     & table {
         width: 100%;
@@ -1867,12 +1869,177 @@ p.small {
     color: var(--profile-bg);
 }
 
+/* Button used to open the chat form - fixed at the bottom of the page */
+.chatBot-wp {
+    margin: 0;
+    padding: 0;
+    position: fixed;
+    bottom: 25px;
+    right: 42px;
+}
+
+.chatBot-wp .open-button {
+    border: none;
+    cursor: pointer;
+    border-radius: 50%;
+    display: block;
+}
+
+.chatBot-wp .closeBtn {
+    padding: 0;
+    width: 34px;
+    height: 34px;
+    position: absolute;
+    right: -25px;
+    top: -25px;
+    border: 0;
+    background: none;
+    cursor: pointer;
+}
+
+.chatBot-wp .closeBtn:hover {
+    opacity: .7;
+}
+
+.chatBot-wp .closeBtn img {
+    width: 100%;
+}
+
+.chatBot-wp .title-wp-chat {
+    display: block;
+    background: #2565AD;
+    color: #fff;
+    font-size: 14px;
+    border-radius: 5px 5px 0 5px;
+    position: absolute;
+    left: -135px;
+    top: -20px;
+    padding: 10px 12px;
+    transition: all 0.3s ease 0s;
+}
+
+.chatBot-wp .title-wp-chat::after {
+    content: "";
+    display: block;
+    width: 0;
+    height: 0;
+    border-top: 14px solid #fff0;
+    border-bottom: solid 0px #fff0;
+    border-left: solid 14px #2565AD;
+    position: absolute;
+    right: -14px;
+    bottom: 0;
+}
+
+.hidden {
+    visibility: hidden;
+}
 
 
 
+.animated1 {
+    -webkit-animation-duration: 1.5s;
+    animation-duration: 1.5s;
+    -webkit-animation-fill-mode: both;
+    animation-fill-mode: both;
+    -webkit-animation-timing-function: linear;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    -webkit-animation-iteration-count: infinite
+}
+
+@-webkit-keyframes bounce1 {
+
+    0%,
+    100% {
+        -webkit-transform: translateY(0)
+    }
+
+    50% {
+        -webkit-transform: translateY(-5px)
+    }
+}
+
+@keyframes bounce1 {
+
+    0%,
+    100% {
+        transform: translateY(0)
+    }
+
+    50% {
+        transform: translateY(-5px)
+    }
+}
+
+.bounce1 {
+    -webkit-animation-name: bounce1;
+    animation-name: bounce1
+}
 
 
+.animated {
+  -webkit-animation-duration: 1s;
+  animation-duration: 1s;
+  -webkit-animation-fill-mode: both;
+  animation-fill-mode: both;
+}
 
+@media (print), (prefers-reduced-motion: reduce) {
+  .animated {
+    -webkit-animation-duration: 1ms !important;
+    animation-duration: 1ms !important;
+    -webkit-transition-duration: 1ms !important;
+    transition-duration: 1ms !important;
+    -webkit-animation-iteration-count: 1 !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+
+@-webkit-keyframes pulse {
+  from {
+    -webkit-transform: scale3d(1, 1, 1);
+    transform: scale3d(1, 1, 1);
+  }
+
+  50% {
+    -webkit-transform: scale3d(1.05, 1.05, 1.05);
+    transform: scale3d(1.05, 1.05, 1.05);
+  }
+
+  to {
+    -webkit-transform: scale3d(1, 1, 1);
+    transform: scale3d(1, 1, 1);
+  }
+}
+
+@keyframes pulse {
+  from {
+    -webkit-transform: scale3d(1, 1, 1);
+    transform: scale3d(1, 1, 1);
+  }
+
+  50% {
+    -webkit-transform: scale3d(1.05, 1.05, 1.05);
+    transform: scale3d(1.05, 1.05, 1.05);
+  }
+
+  to {
+    -webkit-transform: scale3d(1, 1, 1);
+    transform: scale3d(1, 1, 1);
+  }
+}
+
+.pulse {
+  -webkit-animation-name: pulse;
+  animation-name: pulse;
+}
+
+.animated.infinite {
+  -webkit-animation-iteration-count: infinite;
+  animation-iteration-count: infinite;
+}
 
 /* -- css beginning here--- */
 
