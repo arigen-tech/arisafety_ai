@@ -33,6 +33,16 @@ export const ChatBot = () => {
     return () => window.removeEventListener('keydown', closeOnEscape)
   }, [])
 
+  const [visible, setVisible] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setVisible(prev => !prev);
+    }, 6000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const sendMessage = async (event) => {
     event.preventDefault()
     const text = message.trim()
@@ -105,10 +115,10 @@ export const ChatBot = () => {
         </section>
       )}
       <div className="chatBot-wp">
-        {!isOpen && <div className="title-wp-chat">I'm here to help!</div>}
+        {!isOpen && <div className={`title-wp-chat animated1 bounce1 ${visible ? "" : "hidden"}`}>I'm here to help!</div>}
         <button
           type="button"
-          className="open-button"
+          className="open-button open-button animated pulse infinite"          
           onClick={() => setIsOpen((open) => !open)}
           aria-expanded={isOpen}
           aria-controls="chatbot-panel"
