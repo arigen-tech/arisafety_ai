@@ -17,6 +17,7 @@ import { PendingAssignedObservation } from "./pages/PendingAssignedObservation";
 import { Assigned } from "./pages/Assigned";
 import { AssignedObservationDetails } from "./pages/AssignedObservationDetails";
 import { AssignedObservationSubmission } from "./pages/AssignedObservationSubmission";
+import { ChatBot } from "./components/layout/ChatBot";
 
 const router = createBrowserRouter([
   {
@@ -109,6 +110,7 @@ function App() {
   return (
     <>
       <RouterProvider router={router} />
+      <ChatBot />
     </>
   )
 }

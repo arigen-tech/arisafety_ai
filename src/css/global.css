@@ -1876,6 +1876,7 @@ p.small {
     position: fixed;
     bottom: 25px;
     right: 42px;
+    z-index: 1001;
 }
 
 .chatBot-wp .open-button {
@@ -1883,6 +1884,102 @@ p.small {
     cursor: pointer;
     border-radius: 50%;
     display: block;
+    background: transparent;
+    padding: 0;
+    line-height: 0;
+}
+
+.chatBot-wp .open-button:focus-visible,
+.chatBot-close:focus-visible,
+.chatBot-form input:focus-visible,
+.chatBot-form button:focus-visible {
+    outline: 3px solid #004fc7;
+    outline-offset: 3px;
+}
+
+.chatBot-wp .open-button img {
+    width: 64px;
+    height: 64px;
+}
+
+.chatBot-panel {
+    width: min(360px, calc(100vw - 32px));
+    height: min(480px, calc(100vh - 120px));
+    margin-bottom: 14px;
+    overflow: hidden;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 12px 35px rgb(0 0 0 / 0.24);
+    display: flex;
+    flex-direction: column;
+}
+
+.chatBot-header {
+    background: #2565AD;
+    color: #fff;
+    padding: 15px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chatBot-header strong,
+.chatBot-header span { display: block; }
+.chatBot-header span { font-size: 12px; margin-top: 3px; opacity: .85; }
+
+.chatBot-close {
+    border: 0;
+    color: #fff;
+    background: transparent;
+    cursor: pointer;
+    font-size: 30px;
+    line-height: 1;
+}
+
+.chatBot-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    background: #f5f8fc;
+}
+
+.chatBot-message {
+    width: fit-content;
+    max-width: 85%;
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.chatBot-message.bot { background: #e4edf8; color: #17324f; border-bottom-left-radius: 3px; }
+.chatBot-message.user { margin-left: auto; background: #00ACC1; color: #fff; border-bottom-right-radius: 3px; }
+
+.chatBot-form { display: flex; gap: 8px; padding: 12px; border-top: 1px solid #dbe4ef; }
+.chatBot-form input { min-width: 0; flex: 1; border: 1px solid #b8c7d9; border-radius: 8px; padding: 10px; font-size: 14px; }
+.chatBot-form button { border: 0; border-radius: 8px; background: #2565AD; color: #fff; padding: 0 14px; cursor: pointer; font-weight: 700; }
+.chatBot-form button:disabled { cursor: not-allowed; opacity: .65; }
+.chatBot-typing { color: #526579; font-style: italic; }
+.chatBot-error { margin: 0 0 12px; color: #b42318; font-size: 13px; line-height: 1.35; }
+
+/* Visually hide the input label while keeping it available to screen readers. */
+.chatBot-form .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+@media (max-width: 600px) {
+    .chatBot-wp { right: 16px; bottom: 16px; }
+    .chatBot-panel { height: min(480px, calc(100vh - 100px)); }
+    .chatBot-wp .title-wp-chat { left: -132px; }
 }
 
 .chatBot-wp .closeBtn {

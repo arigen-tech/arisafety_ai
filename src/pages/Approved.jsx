@@ -3,6 +3,7 @@ import { TitleBar } from '../components/UI/TitleBar'
 import { MdRemoveRedEye } from 'react-icons/md'
 import { Link } from 'react-router-dom'
 import { getRequest } from "../service/apiService"
+import { useTranslatedApiValues } from "../hooks/useTranslatedApiValues"
 
 const ENDPOINT = '/api/observations/approved'
 
@@ -32,10 +33,18 @@ const titleCase = (value) => String(value || 'Approved')
     .toLowerCase()
     .replace(/\b\w/g, (character) => character.toUpperCase())
 
+const getApprovedDisplayValues = (row) => [
+    String(pick(row, ['plant_name', 'plantName', 'plant'])),
+    String(pick(row, ['risk_level', 'riskLevel', 'risk'])),
+    String(pick(row, ['reported_by', 'reportedBy', 'employee_name', 'employeeName'])),
+    titleCase(pick(row, ['status'], 'Approved')),
+]
+
 export const Approved = () => {
     const [rows, setRows] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
+    const { translatedRows, translationError } = useTranslatedApiValues(rows, getApprovedDisplayValues)
 
     useEffect(() => {
         const load = async () => {
@@ -55,6 +64,7 @@ export const Approved = () => {
     return (
         <>
             <TitleBar title="Approved" />
+            {translationError && <p role="alert">{translationError}</p>}
 
             <div className="card">
                 <div className="table-wrapper">
@@ -93,14 +103,15 @@ export const Approved = () => {
                                 const obsId = pick(r, ['observation_id', 'observationId', 'id'])
                                 const detailId = pick(r, ['observation_id', 'observationId', 'observation_pk', 'id'])
                                 const code = pick(r, ['observation_code', 'observation_no', 'observationCode'], obsId)
+                                const [plant, risk, reportedBy, status] = translatedRows[i] || getApprovedDisplayValues(r)
                                 return (
                                     <tr key={obsId || i}>
-                                        <td>{code}</td>
-                                        <td>{pick(r, ['plant_name', 'plantName', 'plant'])}</td>
-                                        <td>{pick(r, ['risk_level', 'riskLevel', 'risk'])}</td>
-                                        <td>{pick(r, ['reported_by', 'reportedBy', 'employee_name', 'employeeName'])}</td>
-                                        <td>{formatDateTime(pick(r, ['created_at', 'createdAt', 'observation_date', 'reported_at']))}</td>
-                                        <td><span className="approved">{titleCase(pick(r, ['status'], 'Approved'))}</span></td>
+                                        <td data-translation-api="true">{code}</td>
+                                        <td data-translation-api="true">{plant}</td>
+                                        <td data-translation-api="true">{risk}</td>
+                                        <td data-translation-api="true">{reportedBy}</td>
+                                        <td data-translation-api="true">{formatDateTime(pick(r, ['created_at', 'createdAt', 'observation_date', 'reported_at']))}</td>
+                                        <td data-translation-api="true"><span className="approved">{status}</span></td>
                                         <td>
                                             <div className="items-center">
                                                 <Link

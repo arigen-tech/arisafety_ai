@@ -3,7 +3,7 @@ import { translateTexts } from "../service/translationService";
 
 const SUPPORTED_LANGUAGES = ["English", "Hindi", "Marathi"];
 const TRANSLATABLE_ATTRIBUTES = ["placeholder", "title", "aria-label", "alt"];
-const TEXT_EXCLUSIONS = "script, style, noscript, textarea, input, select, [contenteditable='true']";
+const TEXT_EXCLUSIONS = "script, style, noscript, textarea, input, select, [contenteditable='true'], [data-translation-api='true']";
 
 const getSavedLanguage = () => {
   const savedLanguage = localStorage.getItem("websiteLanguage");
@@ -12,6 +12,7 @@ const getSavedLanguage = () => {
 
 export const usePageTranslation = () => {
   const [language, setLanguage] = useState(getSavedLanguage);
+  const [translationAttempt, setTranslationAttempt] = useState(0);
   const [isTranslating, setIsTranslating] = useState(false);
   const [translationError, setTranslationError] = useState("");
   const textRecords = useRef(new WeakMap());
@@ -20,9 +21,13 @@ export const usePageTranslation = () => {
   const selectLanguage = useCallback((nextLanguage) => {
     if (!SUPPORTED_LANGUAGES.includes(nextLanguage)) return;
     localStorage.setItem("websiteLanguage", nextLanguage);
+    if (nextLanguage === "English") setIsTranslating(false);
+    if (nextLanguage === language) {
+      setTranslationAttempt((attempt) => attempt + 1);
+    }
     setTranslationError("");
     setLanguage(nextLanguage);
-  }, []);
+  }, [language]);
 
   useEffect(() => {
     const root = document.body;
@@ -30,6 +35,7 @@ export const usePageTranslation = () => {
     let observer;
     let debounceTimer;
     let translating = false;
+    let translationFailed = false;
     let scanRequested = false;
 
     const restoreEnglish = () => {
@@ -41,6 +47,7 @@ export const usePageTranslation = () => {
         if (record && node.textContent === record.translated) {
           node.textContent = record.original;
           record.translated = "";
+          record.language = "";
         }
         node = walker.nextNode();
       }
@@ -54,6 +61,7 @@ export const usePageTranslation = () => {
           if (record && element.getAttribute(attribute) === record.translated) {
             element.setAttribute(attribute, record.original);
             record.translated = "";
+            record.language = "";
           }
         });
       });
@@ -70,25 +78,31 @@ export const usePageTranslation = () => {
       let node = textNodes.nextNode();
 
       while (node) {
-        const parent = node.parentElement;
-        const currentText = node.textContent || "";
+        const textNode = node;
+        const parent = textNode.parentElement;
+        const currentText = textNode.textContent || "";
         if (parent && !parent.closest(TEXT_EXCLUSIONS) && currentText.trim()) {
-          let record = textRecords.current.get(node);
+          let record = textRecords.current.get(textNode);
           if (!record) {
-            record = { original: currentText, translated: "" };
-            textRecords.current.set(node, record);
+            record = { original: currentText, translated: "", language: "" };
+            textRecords.current.set(textNode, record);
           } else if (currentText !== record.translated) {
             record.original = currentText;
             record.translated = "";
+            record.language = "";
           }
 
-          if (currentText !== record.translated) {
+          if (currentText !== record.translated || record.language !== language) {
             items.push({
-              getValue: () => node.textContent,
-              setValue: (value) => { node.textContent = value; },
+              getValue: () => textNode.textContent,
+              expectedValue: currentText,
+              setValue: (value) => { textNode.textContent = value; },
               source: record.original,
-              setTranslated: (value) => { record.translated = value; },
-              isConnected: () => node.isConnected,
+              setTranslated: (value) => {
+                record.translated = value;
+                record.language = language;
+              },
+              isConnected: () => textNode.isConnected,
             });
           }
         }
@@ -107,19 +121,24 @@ export const usePageTranslation = () => {
           }
           let record = records.get(attribute);
           if (!record) {
-            record = { original: currentText, translated: "" };
+            record = { original: currentText, translated: "", language: "" };
             records.set(attribute, record);
           } else if (currentText !== record.translated) {
             record.original = currentText;
             record.translated = "";
+            record.language = "";
           }
 
-          if (currentText !== record.translated) {
+          if (currentText !== record.translated || record.language !== language) {
             items.push({
               getValue: () => element.getAttribute(attribute),
+              expectedValue: currentText,
               setValue: (value) => { element.setAttribute(attribute, value); },
               source: record.original,
-              setTranslated: (value) => { record.translated = value; },
+              setTranslated: (value) => {
+                record.translated = value;
+                record.language = language;
+              },
               isConnected: () => element.isConnected,
             });
           }
@@ -130,6 +149,7 @@ export const usePageTranslation = () => {
     };
 
     const translatePendingContent = async () => {
+      if (translationFailed) return;
       if (!active || translating) {
         scanRequested = true;
         return;
@@ -141,13 +161,13 @@ export const usePageTranslation = () => {
         do {
           scanRequested = false;
           const items = collectTranslationItems();
-          for (let start = 0; start < items.length; start += 100) {
-            const batch = items.slice(start, start + 100);
+          for (let start = 0; start < items.length; start += 10) {
+            const batch = items.slice(start, start + 10);
             const translations = await translateTexts(batch.map((item) => item.source), language);
             if (!active) return;
 
             batch.forEach((item, index) => {
-              if (item.isConnected() && item.getValue() === item.source) {
+              if (item.isConnected() && item.getValue() === item.expectedValue) {
                 item.setValue(translations[index]);
                 item.setTranslated(translations[index]);
               }
@@ -155,6 +175,7 @@ export const usePageTranslation = () => {
           }
         } while (active && scanRequested);
       } catch (error) {
+        translationFailed = true;
         console.error("Website translation failed:", error);
         if (active) {
           const message = error?.status === 401
@@ -164,7 +185,7 @@ export const usePageTranslation = () => {
               : error?.status === 503
                 ? "The backend cannot reach Ollama. Set OLLAMA_HOST=http://localhost:11434 and restart the backend."
                 : error?.status
-                  ? error.response?.detail || `Translation failed (HTTP ${error.status}).`
+                  ? error.message || `Translation failed (HTTP ${error.status}).`
                   : "The translation backend is unreachable. Make sure it is running at http://localhost:8951.";
           setTranslationError(message);
         }
@@ -176,6 +197,7 @@ export const usePageTranslation = () => {
     };
 
     const scheduleTranslation = () => {
+      if (translationFailed) return;
       window.clearTimeout(debounceTimer);
       debounceTimer = window.setTimeout(translatePendingContent, 100);
     };
@@ -195,7 +217,7 @@ export const usePageTranslation = () => {
       observer.disconnect();
       window.clearTimeout(debounceTimer);
     };
-  }, [language]);
+  }, [language, translationAttempt]);
 
   return { language, selectLanguage, isTranslating, translationError };
 };

@@ -4,6 +4,7 @@ import Swal from "sweetalert2";
 import { MdRemoveRedEye } from "react-icons/md";
 import { TitleBar } from "../components/UI/TitleBar";
 import { getRequest } from "../service/apiService";
+import { useTranslatedApiValues } from "../hooks/useTranslatedApiValues";
 
 // Converts one backend record into the shape the table uses.
 const mapObservation = (item) => {
@@ -29,11 +30,18 @@ const mapObservation = (item) => {
 };
 
 const formatStatus = (status) => String(status ?? "Pending").replace(/_/g, " ");
+const getPendingDisplayValues = (row) => [
+  String(row.location),
+  String(row.priority),
+  String(row.reportedBy),
+  formatStatus(row.status),
+];
 
 export const Pending = () => {
   const navigate = useNavigate();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { translatedRows, translationError } = useTranslatedApiValues(rows, getPendingDisplayValues);
 
   useEffect(() => {
     let ignore = false;
@@ -79,6 +87,7 @@ export const Pending = () => {
   return (
     <>
       <TitleBar title="Pending Observation" />
+      {translationError && <p role="alert">{translationError}</p>}
 
       <div className="card">
         <div className="table-wrapper">
@@ -100,14 +109,17 @@ export const Pending = () => {
               ) : rows.length === 0 ? (
                 <tr><td colSpan="7" className="text-center">No pending observations</td></tr>
               ) : (
-                rows.map(({ id, dbId, location, priority, reportedBy, date, time, status, departmentId, plantId, observation }) => (
+                rows.map(({ id, dbId, location, priority, reportedBy, date, time, status, departmentId, plantId, observation }, index) => {
+                  const [translatedLocation, translatedPriority, translatedReporter, translatedStatus] =
+                    translatedRows[index] || getPendingDisplayValues({ location, priority, reportedBy, status });
+                  return (
                   <tr key={dbId ?? id}>
-                    <td>{id}</td>
-                    <td>{location}</td>
-                    <td>{priority}</td>
-                    <td>{reportedBy}</td>
-                    <td>{date} - {time}</td>
-                    <td>{formatStatus(status)}</td>
+                    <td data-translation-api="true">{id}</td>
+                    <td data-translation-api="true">{translatedLocation}</td>
+                    <td data-translation-api="true">{translatedPriority}</td>
+                    <td data-translation-api="true">{translatedReporter}</td>
+                    <td data-translation-api="true">{date} - {time}</td>
+                    <td data-translation-api="true">{translatedStatus}</td>
                     <td>
                       <div className="items-center">
                         <Link
@@ -121,7 +133,8 @@ export const Pending = () => {
                       </div>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>

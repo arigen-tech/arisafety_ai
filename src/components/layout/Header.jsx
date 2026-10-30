@@ -196,6 +196,22 @@ export const Header = ({
                       <span>{translationError}</span>
                     </a>
                   )}
+                  {translationError.startsWith('Your session has expired') && (
+                    <Link to="/" onClick={() => localStorage.removeItem('token')}>
+                      <span>Sign in again to retry translation</span>
+                    </Link>
+                  )}
+                  {translationError && (
+                    <a
+                      href="#"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        onLanguageSelect(language)
+                      }}
+                    >
+                      <span>Retry translation</span>
+                    </a>
+                  )}
                 </div>
               </div>
             </div>

@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { TitleBar } from '../components/UI/TitleBar'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { getRequest, postRequest, patchRequest, getImageRequest } from '../service/apiService'
+import { useTranslatedApiValues } from '../hooks/useTranslatedApiValues'
 
 const DEPARTMENT_ENDPOINT = '/api/catalog/department'
 const RESPONSIBLE_PEOPLE_ENDPOINT = '/api/catalog/responsible_people'
@@ -48,6 +49,34 @@ const pick = (obj, keys, fallback = '') => {
 
 // null / khali value ki jagah "-"
 const dash = (v) => (v === undefined || v === null || v === '' ? '-' : String(v))
+const getObservationDisplayValues = (observation) => {
+    const ai = observation?.ai_analysis || {}
+    const hazards = Array.isArray(observation?.ai_hazards) && observation.ai_hazards.length
+        ? observation.ai_hazards
+        : ai.hazards || []
+    const recommendations = [
+        ...(observation?.ai_recommendations || []),
+        ...hazards.flatMap((hazard) => hazard.recommendations || []),
+    ]
+
+    return [
+        dash(pick(observation, ['observation_type'])),
+        dash(pick(observation, ['business_unit_name', 'business_unit'])),
+        dash(pick(observation, ['plant_name', 'plant'])),
+        dash(pick(observation, ['department_name', 'department'])),
+        dash(pick(observation, ['location_name', 'location'])),
+        observation?.employee_id ? `Employee #${observation.employee_id}` : '-',
+        dash(pick(observation, ['description'])),
+        dash(pick(observation, ['risk_level'])),
+        dash(pick(observation, ['ai_confidence'])),
+        dash(pick(observation, ['ai_summary'])),
+        hazards.length ? hazards.map((hazard) => hazard.type).join(', ') : '-',
+        dash(ai.message),
+        recommendations.length ? recommendations.join('\n') : '-',
+        hazards.length ? hazards.map((hazard) => hazard.description).join('\n') : '-',
+        recommendations.length ? 'Corrective Action' : '-',
+    ]
+}
 
 // "27-Sep-2026 - 10:35am"
 const formatDateTime = (value) => {
@@ -85,6 +114,7 @@ export const ObservationDetails = () => {
     const [detailLoading, setDetailLoading] = useState(true)
     const [detailError, setDetailError] = useState('')
     const obs = detailObservation ?? routeObservation
+    const observationRows = useMemo(() => obs ? [obs] : [], [obs])
     const plantId = searchParams.get('plant_id') || pick(obs, ['plant_id', 'plantId'], '')
     const user = (() => {
         try {
@@ -126,6 +156,10 @@ export const ObservationDetails = () => {
     const [aiResult, setAiResult] = useState(null);
     const [aiSuggestionText, setAiSuggestionText] = useState('');
     const [analyzing, setAnalyzing] = useState(false);
+    const [chatMessage, setChatMessage] = useState('');
+    const [chatMessages, setChatMessages] = useState([]);
+    const [chatLoading, setChatLoading] = useState(false);
+    const [chatError, setChatError] = useState('');
     const [capa, setCapa] = useState(() => ({
         correctiveAction: '',
         preventiveAction: '',
@@ -361,6 +395,60 @@ export const ObservationDetails = () => {
         recText: hazards.length ? hazards.map((h) => h.description).join('\n') : '-',
         recType: recommendations.length ? 'Corrective Action' : '-',
     }
+    const { translatedRows, translationError: apiTranslationError } =
+        useTranslatedApiValues(observationRows, getObservationDisplayValues)
+    const apiDisplayValues = translatedRows[0] || [
+        v.type,
+        v.bu,
+        v.plant,
+        v.dept,
+        v.location,
+        v.reportedBy,
+        v.description,
+        v.risk,
+        v.confidence,
+        v.summary,
+        v.finding,
+        v.detected,
+        v.recAction,
+        v.recText,
+        v.recType,
+    ]
+    const [
+        translatedType,
+        translatedBusinessUnit,
+        translatedPlant,
+        translatedDepartment,
+        translatedLocation,
+        translatedReporter,
+        translatedDescription,
+        translatedRisk,
+        translatedConfidence,
+        translatedSummary,
+        translatedFinding,
+        translatedDetected,
+        translatedRecommendedAction,
+        translatedRecommendation,
+        translatedRecommendationType,
+    ] = apiDisplayValues
+    const displayValues = {
+        ...v,
+        type: translatedType,
+        bu: translatedBusinessUnit,
+        plant: translatedPlant,
+        dept: translatedDepartment,
+        location: translatedLocation,
+        reportedBy: translatedReporter,
+        description: translatedDescription,
+        risk: translatedRisk,
+        confidence: translatedConfidence,
+        summary: translatedSummary,
+        finding: translatedFinding,
+        detected: translatedDetected,
+        recAction: translatedRecommendedAction,
+        recText: translatedRecommendation,
+        recType: translatedRecommendationType,
+    }
 
     // ---------- SUBMIT API (multipart/form-data) ----------
     const handleFormSubmit = async () => {
@@ -576,12 +664,36 @@ export const ObservationDetails = () => {
         setFormReject(false);
     }
 
+    const handleSafetyChatSubmit = async (event) => {
+        event.preventDefault()
+        const message = chatMessage.trim()
+        if (!message || message.length > 4000 || chatLoading) return
+
+        setChatMessages((previous) => [...previous, { role: 'user', content: message }])
+        setChatMessage('')
+        setChatError('')
+        setChatLoading(true)
+        try {
+            const result = await postRequest('/api/chat', { message })
+            if (typeof result?.response !== 'string' || !result.response.trim()) {
+                throw new Error('The safety assistant returned an invalid response.')
+            }
+            setChatMessages((previous) => [...previous, { role: 'assistant', content: result.response }])
+        } catch (error) {
+            console.error('Safety chat request failed:', error)
+            setChatError(error.message || 'The chat request failed. Please try again.')
+        } finally {
+            setChatLoading(false)
+        }
+    }
+
     return (
         <>
             <div className='title-bar'>
                 <button type='button' className="btnBack" onClick={() => navigate(-1)}></button>
                 <TitleBar title="Observation Details" />
             </div>
+            {apiTranslationError && <p role="alert">{apiTranslationError}</p>}
             {detailLoading && <div className="card text-center" role="status">Loading the latest observation details...</div>}
             {detailError && <div className="card text-center" role="alert">{detailError}</div>}
 
@@ -594,25 +706,25 @@ export const ObservationDetails = () => {
                     </div>
                     <div className="form-group">
                         <label>Observation Type</label>
-                        <input type="text" placeholder="" value={v.type} disabled readOnly />
+                        <input type="text" placeholder="" value={displayValues.type} disabled readOnly />
                     </div>
                     <div className="form-group">
                         <label>Business Unit</label>
-                        <input type="text" placeholder="" value={v.bu} disabled readOnly />
+                        <input type="text" placeholder="" value={displayValues.bu} disabled readOnly />
                     </div>
                     <div className="form-group">
                         <label>Plant </label>
-                        <input type="text" placeholder="" value={v.plant} disabled readOnly />
+                        <input type="text" placeholder="" value={displayValues.plant} disabled readOnly />
                     </div>
 
                     <div className="form-group">
                         <label>Department </label>
-                        <input type="text" placeholder="" value={v.dept} disabled readOnly />
+                        <input type="text" placeholder="" value={displayValues.dept} disabled readOnly />
                     </div>
 
                     <div className="form-group">
                         <label>Location</label>
-                        <input type="text" placeholder="" value={v.location} disabled readOnly />
+                        <input type="text" placeholder="" value={displayValues.location} disabled readOnly />
                     </div>
                     <div className="form-group">
                         <label>Observation Date & Time</label>
@@ -620,11 +732,11 @@ export const ObservationDetails = () => {
                     </div>
                     <div className="form-group">
                         <label>Reported By</label>
-                        <input type="text" placeholder="" value={v.reportedBy} disabled readOnly />
+                        <input type="text" placeholder="" value={displayValues.reportedBy} disabled readOnly />
                     </div>
                     <div className="form-group">
                         <label>Description </label>
-                        <textarea disabled readOnly value={v.description} />
+                        <textarea disabled readOnly value={displayValues.description} />
                     </div>
                 </div>
 
@@ -686,27 +798,27 @@ export const ObservationDetails = () => {
                 <div className="grid mb-20">
                     <div className="form-group">
                         <label>AI Finding </label>
-                        <textarea disabled readOnly value={v.finding} />
+                        <textarea disabled readOnly value={displayValues.finding} />
                     </div>
                     <div className="form-group">
                         <label>AI Classification </label>
-                        <textarea disabled readOnly value={v.type} />
+                        <textarea disabled readOnly value={displayValues.type} />
                     </div>
                     <div className="form-group">
                         <label>Detected Condition </label>
-                        <textarea disabled readOnly value={v.detected} />
+                        <textarea disabled readOnly value={displayValues.detected} />
                     </div>
                     <div className="form-group">
                         <label>Risk Indication </label>
-                        <input type="text" placeholder="" value={v.risk} disabled readOnly />
+                        <input type="text" placeholder="" value={displayValues.risk} disabled readOnly />
                     </div>
                     <div className="form-group">
                         <label>Confidence </label>
-                        <input type="text" placeholder="" value={v.confidence} disabled readOnly />
+                        <input type="text" placeholder="" value={displayValues.confidence} disabled readOnly />
                     </div>
                     <div className="form-group">
                         <label>AI Observation Summary</label>
-                        <textarea disabled readOnly value={v.summary} />
+                        <textarea disabled readOnly value={displayValues.summary} />
                     </div>
 
                 </div>
@@ -745,21 +857,59 @@ export const ObservationDetails = () => {
                 <div className="grid mb-15">
                     <div className="form-group">
                         <label>Recommended Action </label>
-                        <textarea disabled readOnly value={v.recAction} />
+                        <textarea disabled readOnly value={displayValues.recAction} />
                     </div>
                     <div className="form-group">
                         <label>Risk Priority </label>
-                        <input type="text" placeholder="" value={v.risk} disabled readOnly />
+                        <input type="text" placeholder="" value={displayValues.risk} disabled readOnly />
                     </div>
                     <div className="form-group">
                         <label>Recommended Action Type</label>
-                        <input type="text" placeholder="" value={v.recType} disabled readOnly />
+                        <input type="text" placeholder="" value={displayValues.recType} disabled readOnly />
                     </div>
                     <div className="form-group">
                         <label>AI Recommendation </label>
-                        <textarea disabled readOnly value={v.recText} />
+                        <textarea disabled readOnly value={displayValues.recText} />
                     </div>
                 </div>
+            </div>
+
+            <div className="card mb-20">
+                <h3 className='mb-10'>Safety Chatbot</h3>
+                <div role="log" aria-live="polite" aria-label="Chat messages">
+                    {chatMessages.length === 0 && <p>Ask a workplace safety question to get started.</p>}
+                    {chatMessages.map((chat, index) => (
+                        <div className="form-group" key={`${chat.role}-${index}`}>
+                            <strong>{chat.role === 'user' ? 'You' : 'Safety Assistant'}</strong>
+                            <p style={{ whiteSpace: 'pre-wrap' }}>{chat.content}</p>
+                        </div>
+                    ))}
+                    {chatLoading && <p role="status">Getting an answer...</p>}
+                </div>
+                {chatError && <p role="alert">{chatError}</p>}
+                <form className="grid grid-col-1" onSubmit={handleSafetyChatSubmit}>
+                    <div className="form-group">
+                        <label htmlFor="safety-chat-message">Message</label>
+                        <textarea
+                            id="safety-chat-message"
+                            rows={3}
+                            maxLength={4000}
+                            value={chatMessage}
+                            onChange={(event) => setChatMessage(event.target.value)}
+                            placeholder="What should I do if I find damaged safety equipment?"
+                        />
+                        <small>{chatMessage.length}/4000 characters</small>
+                    </div>
+                    <div className="d-flex">
+                        <button
+                            type="submit"
+                            className="btn btn-primary"
+                            disabled={chatLoading || !chatMessage.trim()}
+                        >
+                            {chatLoading ? 'Sending...' : 'Send'}
+                        </button>
+                    </div>
+                </form>
             </div>
 
             <div className="card mb-20">

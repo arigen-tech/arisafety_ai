@@ -1,7 +1,8 @@
 import { postRequest } from "./apiService";
 
 const TRANSLATE_BATCH_ENDPOINT = "/api/translate/batch";
-const MAX_BATCH_SIZE = 100;
+const MAX_BATCH_SIZE = 10;
+const translationCache = new Map();
 
 const getValidationDetails = (error) => {
   const detail = error?.response?.detail;
@@ -44,7 +45,10 @@ const translateBatch = async (texts, targetLang) => {
       const secondHalf = await translateBatch(texts.slice(midpoint), targetLang);
       return [...firstHalf, ...secondHalf];
     }
-    throw new Error(getErrorMessage(error), { cause: error });
+    const requestError = new Error(getErrorMessage(error), { cause: error });
+    requestError.status = error?.status;
+    requestError.response = error?.response;
+    throw requestError;
   }
 
   if (
@@ -64,12 +68,18 @@ export const translateTexts = async (texts, targetLang) => {
     throw new Error("A target language is required.");
   }
 
-  const translatedTexts = [];
-  for (let start = 0; start < texts.length; start += MAX_BATCH_SIZE) {
-    translatedTexts.push(
-      ...await translateBatch(texts.slice(start, start + MAX_BATCH_SIZE), targetLang),
-    );
+  const cacheKeys = texts.map((text) => `${targetLang}\u0000${text}`);
+  const missingTexts = [...new Set(
+    texts.filter((text, index) => !translationCache.has(cacheKeys[index])),
+  )];
+
+  for (let start = 0; start < missingTexts.length; start += MAX_BATCH_SIZE) {
+    const batch = missingTexts.slice(start, start + MAX_BATCH_SIZE);
+    const translations = await translateBatch(batch, targetLang);
+    batch.forEach((text, index) => {
+      translationCache.set(`${targetLang}\u0000${text}`, translations[index]);
+    });
   }
 
-  return translatedTexts;
+  return cacheKeys.map((key) => translationCache.get(key));
 };
