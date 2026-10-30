@@ -60,7 +60,7 @@ export const ChatBot = () => {
   }
 
   return (
-    <div className="chatBot-wp">
+    <>
       {isOpen && (
         <section id="chatbot-panel" className="chatBot-panel" aria-label="AI Safety Assistant chat">
           <div className="chatBot-header">
@@ -95,24 +95,28 @@ export const ChatBot = () => {
               maxLength={4000}
               disabled={isSending}
             />
-            <button type="submit" aria-label="Send message" disabled={isSending || !message.trim()}>
-              {isSending ? 'Sending...' : 'Send'}
+            <button type="submit" aria-label="Send message" title='Send' disabled={isSending || !message.trim()}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="30" fill="none" viewBox="0 0 32 32">
+                <path fill="#00ACC1" d="M5.444 24.318c-.181.808.643 1.474 1.395 1.127l18.179-8.39c.774-.358.774-1.458 0-1.816L6.839 6.849c-.752-.347-1.576.319-1.395 1.127L7 14.892l8.749 1.255L7 17.402l-1.556 6.916z"></path>
+              </svg>
+              {/* {isSending ? 'Sending...' : 'Send'} */}
             </button>
           </form>
         </section>
       )}
-
-      {!isOpen && <div className="title-wp-chat">I'm here to help!</div>}
-      <button
-        type="button"
-        className="open-button"
-        onClick={() => setIsOpen((open) => !open)}
-        aria-expanded={isOpen}
-        aria-controls="chatbot-panel"
-        aria-label={isOpen ? 'Close AI Safety Assistant chat' : 'Open AI Safety Assistant chat'}
-      >
-        <img src="/images/chatbot-icon.svg" alt="" />
-      </button>
-    </div>
+      <div className="chatBot-wp">
+        {!isOpen && <div className="title-wp-chat">I'm here to help!</div>}
+        <button
+          type="button"
+          className="open-button"
+          onClick={() => setIsOpen((open) => !open)}
+          aria-expanded={isOpen}
+          aria-controls="chatbot-panel"
+          aria-label={isOpen ? 'Close AI Safety Assistant chat' : 'Open AI Safety Assistant chat'}
+        >
+          <img src="/images/chatbot-icon.svg" alt="" />
+        </button>
+      </div>
+    </>
   )
 }
