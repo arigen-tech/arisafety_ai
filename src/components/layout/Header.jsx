@@ -4,16 +4,14 @@ import { FaEarthAmericas } from 'react-icons/fa6'
 import { PiUserSwitchFill } from 'react-icons/pi'
 import { Link } from 'react-router-dom'
 import { getRequest, postRequest } from '../../service/apiService' 
-
-const ROLE_ENDPOINT = '/api/catalog/role'
-const SWITCH_ROLE_ENDPOINT = '/api/auth/switch-role'
+import { ENDPOINTS } from '../../config/apiConfig'
 
 const toArray = (json) => (Array.isArray(json) ? json : json?.data || json?.items || json?.rows || [])
 let rolesRequest
 
 const getRoles = () => {
   if (!rolesRequest) {
-    rolesRequest = getRequest(ROLE_ENDPOINT)
+    rolesRequest = getRequest(ENDPOINTS.CATALOG_ROLE)
       .then(toArray)
       .catch((error) => {
         rolesRequest = null
@@ -97,7 +95,7 @@ export const Header = ({
     setRoleSwitchError('')
 
     try {
-      const response = await postRequest(SWITCH_ROLE_ENDPOINT, {
+      const response = await postRequest(ENDPOINTS.SWITCH_ROLE, {
         role_id: Number(role.role_id),
       })
       const activeRoleId = String(response.active_role_id)

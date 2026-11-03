@@ -5,6 +5,7 @@ import { MdRemoveRedEye } from "react-icons/md";
 import { TitleBar } from "../components/UI/TitleBar";
 import { getRequest } from "../service/apiService";
 import { useTranslatedApiValues } from "../hooks/useTranslatedApiValues";
+import { ENDPOINTS } from "../config/apiConfig";
 
 // Converts one backend record into the shape the table uses.
 const mapObservation = (item) => {
@@ -48,7 +49,7 @@ export const Pending = () => {
 
     const loadPending = async () => {
       try {
-        const res = await getRequest("/api/observations/pending"); // was getData
+        const res = await getRequest(ENDPOINTS.PENDING_OBSERVATIONS);
 
         // Works for [..] or { items | data | results: [..] }
         const list = Array.isArray(res)

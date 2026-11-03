@@ -4,8 +4,7 @@ import { MdRemoveRedEye } from 'react-icons/md'
 import { Link } from 'react-router-dom'
 import { getRequest } from "../service/apiService"
 import { useTranslatedApiValues } from "../hooks/useTranslatedApiValues"
-
-const ENDPOINT = '/api/observations/approved'
+import { ENDPOINTS } from "../config/apiConfig"
 
 // response array ho ya { data: [...] }, dono chalega
 const toArray = (json) => (Array.isArray(json) ? json : json?.data || json?.items || json?.rows || [])
@@ -49,7 +48,7 @@ export const Approved = () => {
     useEffect(() => {
         const load = async () => {
             try {
-                const data = await getRequest(ENDPOINT)
+                const data = await getRequest(ENDPOINTS.APPROVED_OBSERVATIONS)
                 setRows(toArray(data))
             } catch (err) {
                 console.error(err)

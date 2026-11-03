@@ -1,6 +1,4 @@
-import { data } from "react-router-dom";
-import { API_HOST } from "../config/apiConfig";
-const BASE_URL = API_HOST;
+import { API_HOST, getApiUrl } from "../config/apiConfig";
 
 const createRequestError = (status, message, response) => {
   const error = new Error(message);
@@ -45,7 +43,7 @@ export const getRequest = async (endpoint, headers = {}) => {
     } else {
       token = { Authorization: `Bearer ${sessionStorage.getItem("token")}` };
     }
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
+    const response = await fetch(getApiUrl(endpoint), {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -86,7 +84,7 @@ export const getRequest = async (endpoint, headers = {}) => {
  */
 export const getPublicRequest = async (endpoint, headers = {}) => {
   try {
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
+    const response = await fetch(getApiUrl(endpoint), {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -129,7 +127,7 @@ export const getImageRequest = async (
       token = { Authorization: `Bearer ${sessionStorage.getItem("token")}` };
     }
 
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
+    const response = await fetch(getApiUrl(endpoint), {
       method: "GET",
       headers: {
         ...(responseType === "json" && { "Content-Type": "application/json" }),
@@ -175,7 +173,7 @@ export const postRequest = async (endpoint, data, options = {}) => {
 
     const isMultipart = options.isMultipart;
 
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
+    const response = await fetch(getApiUrl(endpoint), {
       method: "POST",
       headers: {
         ...token,
@@ -208,7 +206,7 @@ export const patchRequest = async (endpoint, data, options = {}) => {
   try {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
     const isMultipart = options.isMultipart;
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
+    const response = await fetch(getApiUrl(endpoint), {
       method: "PATCH",
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -250,7 +248,7 @@ export const postPublicRequest = async (endpoint, data, options = {}) => {
   try {
     const isMultipart = options.isMultipart;
 
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
+    const response = await fetch(getApiUrl(endpoint), {
       method: "POST",
       headers: {
        
@@ -298,7 +296,7 @@ export const postRequestWithFormData = async (endpoint, formData) => {
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
+    const response = await fetch(getApiUrl(endpoint), {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`, 
@@ -347,7 +345,7 @@ export const putRequestWithFormData = async (endpoint, formData) => {
 
     console.log(`Sending PUT request to: ${endpoint}`);
 
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
+    const response = await fetch(getApiUrl(endpoint), {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -398,7 +396,7 @@ export const putRequest = async (endpoint, data, headers = {}) => {
       };
     }
 
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
+    const response = await fetch(getApiUrl(endpoint), {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -447,7 +445,9 @@ export const putRequest = async (endpoint, data, headers = {}) => {
  * @throws {Error} - Throws an error if the request fails
  */
 export const fetchPdfReportForViewAndPrint = async (reportUrl, flag) => {
-  const response = await fetch(`${reportUrl}&flag=${flag}`, {
+  const reportEndpoint = new URL(reportUrl, `${API_HOST.replace(/\/+$/, "")}/`);
+  reportEndpoint.searchParams.set("flag", flag);
+  const response = await fetch(getApiUrl(reportEndpoint.toString()), {
     method: "GET",
     headers: {
       Accept: "application/pdf",
@@ -484,7 +484,7 @@ const uploadFileWithJson = async (endpoint, jsonData, files) => {
   }
 
   try {
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
+    const response = await fetch(getApiUrl(endpoint), {
       method: "POST",
       headers: { ...token },
       body: formData,
@@ -520,7 +520,7 @@ const updateFileWithJson = async (endpoint, jsonData, files) => {
   }
 
   try {
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
+    const response = await fetch(getApiUrl(endpoint), {
       method: "PUT",
       headers: { ...token },
       body: formData,
@@ -555,7 +555,7 @@ async function uploadMultiFileWithJson(endpoint, jsonData, files1, files2) {
   formData.append(`thumbImage`, files2);
 
   try {
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
+    const response = await fetch(getApiUrl(endpoint), {
       method: "POST",
       headers: {
         ...token,
@@ -598,7 +598,7 @@ async function updateMultiFileWithJson(endpoint, jsonData, files1, files2) {
   }
 
   try {
-    const response = await fetch(`${BASE_URL}${endpoint}`, {
+    const response = await fetch(getApiUrl(endpoint), {
       method: "PUT", // Use PUT or PATCH based on your API
       headers: {
         ...token,

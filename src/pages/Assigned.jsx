@@ -4,8 +4,7 @@ import { MdRemoveRedEye } from 'react-icons/md'
 import { TitleBar } from '../components/UI/TitleBar'
 import { getRequest } from '../service/apiService'
 import { useTranslatedApiValues } from '../hooks/useTranslatedApiValues'
-
-const ENDPOINT = '/api/observations/assigned'
+import { ENDPOINTS } from '../config/apiConfig'
 
 const toArray = (response) => {
     if (Array.isArray(response)) return response
@@ -54,7 +53,7 @@ export const Assigned = () => {
 
         const loadAssigned = async () => {
             try {
-                const response = await getRequest(ENDPOINT)
+                const response = await getRequest(ENDPOINTS.ASSIGNED_OBSERVATIONS)
                 if (!ignore) setRows(toArray(response))
             } catch (err) {
                 if (!ignore) {

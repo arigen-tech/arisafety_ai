@@ -3,13 +3,7 @@ import { TitleBar } from '../components/UI/TitleBar'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { getRequest, postRequest, patchRequest, getImageRequest } from '../service/apiService'
 import { useTranslatedApiValues } from '../hooks/useTranslatedApiValues'
-
-const DEPARTMENT_ENDPOINT = '/api/catalog/department'
-const RESPONSIBLE_PEOPLE_ENDPOINT = '/api/catalog/responsible_people'
-const ROLE_ENDPOINT = '/api/catalog/role'
-const OBSERVATIONS_ENDPOINT = '/api/observations'
-const FIELD_SUBMISSION_ENDPOINT = '/api/observations'
-const CAPA_RECOMMENDATIONS_ENDPOINT = '/api/observations' // + /{id}/capa-recommendations
+import { ENDPOINTS } from '../config/apiConfig'
 const getTodayDate = () => {
     const date = new Date()
     date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
@@ -22,7 +16,7 @@ let departmentsRequest
 
 const getDepartments = () => {
     if (!departmentsRequest) {
-        departmentsRequest = getRequest(DEPARTMENT_ENDPOINT)
+        departmentsRequest = getRequest(ENDPOINTS.CATALOG_DEPARTMENT)
             .then(toArray)
             .catch((error) => {
                 departmentsRequest = null
@@ -94,7 +88,7 @@ const formatDateTime = (value) => {
 // "observations/abc/images/image-1.png" -> "image-1.png"
 const fileNameOf = (path) => (path ? String(path).split('/').pop() : '-')
 
-// full URL se sirf path nikalta hai (apiService BASE_URL khud lagata hai)
+// full URL se sirf same-origin API path nikalta hai
 const toEndpoint = (url) => {
     try {
         const u = new URL(url)
@@ -184,7 +178,7 @@ export const ObservationDetails = () => {
             setDetailLoading(true)
             setDetailError('')
             try {
-                const response = await getRequest(`${OBSERVATIONS_ENDPOINT}/${encodeURIComponent(observationId)}`)
+                const response = await getRequest(ENDPOINTS.OBSERVATION(observationId))
                 const loadedObservation = response?.data?.observation
                     ?? response?.observation
                     ?? response?.data
@@ -249,7 +243,7 @@ export const ObservationDetails = () => {
 
             try {
                 if (activeRoleId) {
-                    const roles = toArray(await getRequest(ROLE_ENDPOINT))
+                    const roles = toArray(await getRequest(ENDPOINTS.CATALOG_ROLE))
                     const activeRole = roles.find((role) => String(role.role_id) === activeRoleId)
                     if (!ignore) {
                         const roleName = activeRole?.role_name || storedRoleName
@@ -301,7 +295,7 @@ export const ObservationDetails = () => {
         }
 
         const requestPlantId = plantId || '1'
-        const endpoint = `${RESPONSIBLE_PEOPLE_ENDPOINT}?department_id=${encodeURIComponent(selectedDepartmentId)}&plant_id=${encodeURIComponent(requestPlantId)}`
+        const endpoint = ENDPOINTS.CATALOG_RESPONSIBLE_PEOPLE(selectedDepartmentId, requestPlantId)
         const loadResponsiblePeople = async () => {
             setPeopleLoading(true)
             setPeopleError('')
@@ -466,7 +460,7 @@ export const ObservationDetails = () => {
             setLoading(true)
             try {
                 const response = await postRequest(
-                    `${FIELD_SUBMISSION_ENDPOINT}/${encodeURIComponent(observationId)}/field-submission`,
+                    ENDPOINTS.FIELD_SUBMISSION(observationId),
                     submissionForm,
                     { isMultipart: true }
                 )
@@ -535,14 +529,14 @@ export const ObservationDetails = () => {
         let updateSucceeded = false
         try {
             const updateResult = await patchRequest(
-                `${OBSERVATIONS_ENDPOINT}/${encodeURIComponent(observationId)}/update`,
+                ENDPOINTS.OBSERVATION_UPDATE(observationId),
                 updateForm,
                 { isMultipart: true }
             )
             updateSucceeded = true
 
             const assignResult = await postRequest(
-                `${OBSERVATIONS_ENDPOINT}/${encodeURIComponent(observationId)}/assign`,
+                ENDPOINTS.ASSIGN_OBSERVATION(observationId),
                 {
                     field_officer_id: responsiblePersonId,
                     capa_recommendation: capaRecommendation,
@@ -598,7 +592,7 @@ export const ObservationDetails = () => {
         setAnalyzing(true)
         try {
             const result = await postRequest(
-                `${CAPA_RECOMMENDATIONS_ENDPOINT}/${Number(observationId)}/capa-recommendations`,
+                ENDPOINTS.CAPA_RECOMMENDATIONS(Number(observationId)),
                 fd,
                 { isMultipart: true }
             )
@@ -630,7 +624,7 @@ export const ObservationDetails = () => {
         setLoading(true)
         try {
             const response = await postRequest(
-                `${OBSERVATIONS_ENDPOINT}/${encodeURIComponent(observationId)}/decision`,
+                ENDPOINTS.OBSERVATION_DECISION(observationId),
                 { decision, ...(comments.trim() ? { comments: comments.trim() } : {}) }
             )
             const decidedObservation = response?.data?.observation
@@ -674,7 +668,7 @@ export const ObservationDetails = () => {
         setChatError('')
         setChatLoading(true)
         try {
-            const result = await postRequest('/api/chat', { message })
+            const result = await postRequest(ENDPOINTS.CHAT, { message })
             if (typeof result?.response !== 'string' || !result.response.trim()) {
                 throw new Error('The safety assistant returned an invalid response.')
             }

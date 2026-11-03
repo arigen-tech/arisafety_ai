@@ -4,21 +4,12 @@ import { IoMdCall } from "react-icons/io";
 import { MdOutlineMailOutline } from "react-icons/md";
 import Swal from "sweetalert2";
 import { getRequest } from "../service/apiService";
-import { API_HOST } from "../config/apiConfig";
-
-const ENDPOINTS = {
-    BUSINESS_UNIT: "/api/catalog/business_unit",
-    PLANT: "/api/catalog/plant",
-    DEPARTMENT: "/api/catalog/department",
-    ROLE: "/api/catalog/role",
-    PROFILE: "/api/profile/me",
-    UPDATE_PROFILE: (userId) => `/api/profile/${userId}`, // PATCH /api/profile/{user_id}
-};
+import { ENDPOINTS, getApiUrl } from "../config/apiConfig";
 
 // JSON body ke saath PATCH bhejta hai (token ke saath). apiService mein patch function nahi hai.
 const sendJson = async (method, endpoint, data) => {
     const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-    const response = await fetch(`${API_HOST}${endpoint}`, {
+    const response = await fetch(getApiUrl(endpoint), {
         method,
         headers: {
             "Content-Type": "application/json",
@@ -166,10 +157,10 @@ export const Profile = () => {
     useEffect(() => {
         const loadDropdowns = async () => {
             const results = await Promise.allSettled([
-                getRequest(ENDPOINTS.BUSINESS_UNIT),
-                getRequest(ENDPOINTS.PLANT),
-                getRequest(ENDPOINTS.DEPARTMENT),
-                getRequest(ENDPOINTS.ROLE),
+                getRequest(ENDPOINTS.CATALOG_BUSINESS_UNIT),
+                getRequest(ENDPOINTS.CATALOG_PLANT),
+                getRequest(ENDPOINTS.CATALOG_DEPARTMENT),
+                getRequest(ENDPOINTS.CATALOG_ROLE),
             ]);
 
             const [bu, pl, dp, rl] = results;
@@ -219,7 +210,7 @@ export const Profile = () => {
         setSaving(true);
         try {
             // Swagger schema: first_name, last_name, email, mobile_number, business_unit, plant, department
-            const updated = await sendJson("PATCH", ENDPOINTS.UPDATE_PROFILE(profile.id), {
+            const updated = await sendJson("PATCH", ENDPOINTS.PROFILE_BY_ID(profile.id), {
                 first_name: form.firstName.trim(),
                 last_name: form.lastName.trim(),
                 email: form.email.trim(),

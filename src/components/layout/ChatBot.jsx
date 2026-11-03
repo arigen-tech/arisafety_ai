@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { postRequest } from '../../service/apiService'
+import { ENDPOINTS } from '../../config/apiConfig'
 
 const WELCOME_MESSAGE = {
   id: 1,
@@ -54,7 +55,7 @@ export const ChatBot = () => {
     setIsSending(true)
 
     try {
-      const result = await postRequest('/api/chat', { message: text })
+      const result = await postRequest(ENDPOINTS.CHAT, { message: text })
       if (typeof result?.response !== 'string' || !result.response.trim()) {
         throw new Error('The safety assistant returned an invalid response.')
       }
@@ -62,7 +63,7 @@ export const ChatBot = () => {
     } catch (requestError) {
       console.error('Safety chat request failed:', requestError)
       setError(requestError.status === 404
-        ? 'The chat endpoint was not found on this backend. It must expose POST /api/chat.'
+        ? `The chat endpoint was not found on this backend. It must expose POST ${ENDPOINTS.CHAT}.`
         : requestError.message || 'The chat request failed. Please try again.')
     } finally {
       setIsSending(false)

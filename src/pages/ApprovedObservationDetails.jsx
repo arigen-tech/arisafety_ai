@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { TitleBar } from '../components/UI/TitleBar'
 import { getImageRequest, getRequest } from '../service/apiService'
+import { ENDPOINTS } from '../config/apiConfig'
 
 const pick = (object, keys, fallback = '') => {
     for (const key of keys) {
@@ -50,7 +51,7 @@ export const ApprovedObservationDetails = () => {
             setLoading(true)
             setError('')
             try {
-                const response = await getRequest(`/api/observations/${encodeURIComponent(id)}`)
+                const response = await getRequest(ENDPOINTS.OBSERVATION(id))
                 if (!ignore) setObservation(getObservation(response))
             } catch (requestError) {
                 console.error('Approved observation could not be loaded:', requestError)

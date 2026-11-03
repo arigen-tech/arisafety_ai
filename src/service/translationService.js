@@ -1,6 +1,5 @@
 import { postRequest } from "./apiService";
-
-const TRANSLATE_BATCH_ENDPOINT = "/api/translate/batch";
+import { ENDPOINTS } from "../config/apiConfig";
 const MAX_BATCH_SIZE = 10;
 const translationCache = new Map();
 
@@ -37,7 +36,7 @@ const getErrorMessage = (error) => {
 const translateBatch = async (texts, targetLang) => {
   let response;
   try {
-    response = await postRequest(TRANSLATE_BATCH_ENDPOINT, { texts, targetLang });
+    response = await postRequest(ENDPOINTS.TRANSLATE_BATCH, { texts, targetLang });
   } catch (error) {
     if (texts.length > 1 && isBatchSizeError(error)) {
       const midpoint = Math.ceil(texts.length / 2);

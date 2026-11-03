@@ -2,9 +2,7 @@ import { useEffect, useState } from "react"
 import { Link, useLocation, useNavigate } from "react-router-dom"
 import { TitleBar } from "../components/UI/TitleBar"
 import { getRequest } from "../service/apiService"
-
-const DEPARTMENT_ENDPOINT = "/api/catalog/department"
-const RESPONSIBLE_PEOPLE_ENDPOINT = "/api/catalog/responsible_people"
+import { ENDPOINTS } from "../config/apiConfig"
 
 const toArray = (response, keys = []) => {
     if (Array.isArray(response)) return response
@@ -50,7 +48,7 @@ export const AssignedObservationDetails = () => {
 
         const loadDepartments = async () => {
             try {
-                const response = await getRequest(DEPARTMENT_ENDPOINT)
+                const response = await getRequest(ENDPOINTS.CATALOG_DEPARTMENT)
                 if (!ignore) setDepartments(toArray(response, ["departments"]))
             } catch (error) {
                 if (!ignore) {
@@ -68,7 +66,7 @@ export const AssignedObservationDetails = () => {
 
     useEffect(() => {
         let ignore = false
-        const endpoint = `${RESPONSIBLE_PEOPLE_ENDPOINT}?department_id=${encodeURIComponent(departmentId)}&plant_id=${encodeURIComponent(plantId)}`
+        const endpoint = ENDPOINTS.CATALOG_RESPONSIBLE_PEOPLE(departmentId, plantId)
 
         const loadResponsiblePeople = async () => {
             setPeopleLoading(true)

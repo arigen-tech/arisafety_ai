@@ -2,8 +2,7 @@ import { useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { TitleBar } from "../components/UI/TitleBar";
 import { postRequest } from "../service/apiService";
-
-const FIELD_SUBMISSION_ENDPOINT = "/api/observations";
+import { ENDPOINTS } from "../config/apiConfig";
 
 const getErrorMessage = (error) => {
     const detail = error?.response?.detail;
@@ -51,7 +50,7 @@ export const AssignedObservationSubmission = () => {
         setError("");
         try {
             await postRequest(
-                `${FIELD_SUBMISSION_ENDPOINT}/${Number(observationId)}/field-submission`,
+                ENDPOINTS.FIELD_SUBMISSION(Number(observationId)),
                 formData,
                 { isMultipart: true }
             );
