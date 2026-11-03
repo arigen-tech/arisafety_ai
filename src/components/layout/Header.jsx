@@ -5,6 +5,7 @@ import { PiUserSwitchFill } from 'react-icons/pi'
 import { Link } from 'react-router-dom'
 import { getRequest, postRequest } from '../../service/apiService' 
 import { ENDPOINTS } from '../../config/apiConfig'
+import { clearAuthSession } from '../../service/authService'
 
 const toArray = (json) => (Array.isArray(json) ? json : json?.data || json?.items || json?.rows || [])
 let rolesRequest
@@ -195,7 +196,7 @@ export const Header = ({
                     </a>
                   )}
                   {translationError.startsWith('Your session has expired') && (
-                    <Link to="/" onClick={() => localStorage.removeItem('token')}>
+                    <Link to="/" onClick={clearAuthSession}>
                       <span>Sign in again to retry translation</span>
                     </Link>
                   )}
@@ -280,12 +281,7 @@ export const Header = ({
                   </Link>
                   <Link
                     to="/"
-                    onClick={() => {
-                      localStorage.removeItem('user')
-                      localStorage.removeItem('selectedRoleId')
-                      localStorage.removeItem('selectedRoleName')
-                      localStorage.removeItem('selectedMenuKey')
-                    }}
+                    onClick={clearAuthSession}
                   >
                     <img src="images/icons/logout-icon.svg" alt="logout icon" />
                     <span>Logout</span>

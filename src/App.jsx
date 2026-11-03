@@ -1,4 +1,5 @@
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
 import { LoginPage } from "./pages/LoginPage";
 import { Layout } from "./components/layout/Layout";
 import { Dashboard } from "./pages/Dashboard";
@@ -18,6 +19,82 @@ import { Assigned } from "./pages/Assigned";
 import { AssignedObservationDetails } from "./pages/AssignedObservationDetails";
 import { AssignedObservationSubmission } from "./pages/AssignedObservationSubmission";
 import { ChatBot } from "./components/layout/ChatBot";
+import { Loading } from "./components/layout/Loading";
+import { getRequest } from "./service/apiService";
+import { clearAuthSession } from "./service/authService";
+import { ENDPOINTS } from "./config/apiConfig";
+
+const AuthenticatedApp = () => {
+  const [status, setStatus] = useState("checking");
+  const [retryCount, setRetryCount] = useState(0);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    const verifySession = async () => {
+      if (!localStorage.getItem("token")) {
+        if (active) setStatus("unauthenticated");
+        return;
+      }
+
+      try {
+        await getRequest(ENDPOINTS.AUTH_PROFILE);
+        if (active) setStatus("authenticated");
+      } catch (requestError) {
+        if (!active) return;
+
+        if (requestError.status === 401 || requestError.status === 403) {
+          clearAuthSession();
+          setStatus("unauthenticated");
+          return;
+        }
+
+        setError("Unable to verify your session. Check your connection and try again.");
+        setStatus("error");
+      }
+    };
+
+    verifySession();
+
+    return () => {
+      active = false;
+    };
+  }, [retryCount]);
+
+  if (status === "checking") return <Loading />;
+  if (status === "unauthenticated") {
+    return <Navigate to="/" replace />;
+  }
+  if (status === "error") {
+    return (
+      <section role="alert" className="errorPage">
+        <div>
+          <h1>Session verification failed</h1>
+          <p>{error}</p>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => {
+              setError("");
+              setStatus("checking");
+              setRetryCount((count) => count + 1);
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <>
+      <Layout />
+      <ChatBot />
+    </>
+  );
+};
 
 const router = createBrowserRouter([
   {
@@ -26,7 +103,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/",
-    element: <Layout />,
+    element: <AuthenticatedApp />,
     // errorElement: <ErrorPage />,
     children: [
       {
@@ -110,7 +187,6 @@ function App() {
   return (
     <>
       <RouterProvider router={router} />
-      <ChatBot />
     </>
   )
 }
