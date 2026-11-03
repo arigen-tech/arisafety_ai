@@ -1689,7 +1689,8 @@ p.small {
 
 .popupModal {
     background: var(--white-color);
-    border-radius: 8px;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgb(15 23 42 / 0.2);
     max-width: 900px;
     width: 95%;
     max-height: 80vh;
@@ -1744,6 +1745,86 @@ p.small {
 
 .ms-model {
     max-width: 450px;
+}
+
+.app-alert-popup {
+    box-sizing: border-box !important;
+    max-width: calc(100vw - 32px) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 20px 60px rgb(15 23 42 / 0.2) !important;
+}
+
+.app-alert-title {
+    color: #1f2937 !important;
+    font-size: 22px !important;
+}
+
+.app-alert-description {
+    color: #64748b !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+}
+
+.app-alert-actions {
+    gap: 10px !important;
+    margin-top: 20px !important;
+}
+
+.app-alert-confirm,
+.app-alert-cancel {
+    border: 0;
+    border-radius: 8px;
+    padding: 11px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.app-alert-confirm {
+    background: #c93737;
+    color: #fff;
+}
+
+.app-alert-confirm:hover {
+    background: #ad2d2d;
+}
+
+.app-alert-cancel {
+    background: #f1f5f9;
+    color: #334155;
+}
+
+.app-alert-cancel:hover {
+    background: #e2e8f0;
+}
+
+.user-role-editor {
+    max-width: 480px;
+}
+
+.user-role-options {
+    display: grid;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.user-role-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid rgb(0 0 0 / 0.12);
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.user-role-option:has(input:checked) {
+    border-color: var(--secondary-color);
+    background: rgb(0 172 193 / 0.06);
+}
+
+.user-role-option input {
+    accent-color: var(--secondary-color);
 }
 
 /***********************************/

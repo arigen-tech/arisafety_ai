@@ -1,20 +1,19 @@
 import React, { useState } from 'react'
 import { TitleBar } from '../components/UI/TitleBar'
 import { Link, useNavigate } from 'react-router-dom'
+import { AppAlert } from '../appAlert'
 
 export const AssignedObservation = () => {
     const [aISuggestions, setAISuggestions] = useState(false);
-    const [formSubmit, setFormSubmit] = useState(false);
     const [formReject, setFormReject] = useState(false);
 
     const navigate = useNavigate();
 
-    const handleFormSubmit = () => {
-        setFormSubmit(true);
-    }
-    const handleFormClose = () => {
-        setFormSubmit(false);
-    }
+    const handleFormSubmit = () => AppAlert.fire({
+        icon: 'success',
+        title: 'Observation submitted successfully',
+        text: 'Your observation has been submitted.',
+    })
 
     const handleFormRejection = () => {
         setFormReject(true);
@@ -281,18 +280,6 @@ export const AssignedObservation = () => {
 
 
 
-            {formSubmit && <div className="modalBackdrop">
-                <div className="popupModal ms-model">
-                    <div className="modalBody">
-                        <div className='checkMark'>
-                            <img src="images/icons/check-mark-success-large.gif" alt="Check icon" />
-                            <p className='text-center'>Observation successfully Submitted.</p>
-                            <button className='btn btn-primary' onClick={handleFormClose}>OK</button>
-                        </div>
-                    </div>
-                </div>
-            </div>}
-
             {formReject && <div className="modalBackdrop">
                 <div className="popupModal ms-model">
                     <div className="modalHeader">
@@ -321,4 +308,3 @@ export const AssignedObservation = () => {
         </>
     )
 }
-

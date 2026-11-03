@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import Swal from "sweetalert2";
+import { AppAlert } from "../appAlert";
 import { MdRemoveRedEye } from "react-icons/md";
 import { TitleBar } from "../components/UI/TitleBar";
 import { getRequest } from "../service/apiService";
@@ -69,7 +69,7 @@ export const Pending = () => {
           return;
         }
 
-        Swal.fire({
+        AppAlert.fire({
           icon: "error",
           title: "Could not load observations",
           text: err.status === undefined

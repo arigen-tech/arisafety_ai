@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { TitleBar } from "../components/UI/TitleBar";
 import { IoMdCall } from "react-icons/io";
 import { MdOutlineMailOutline } from "react-icons/md";
-import Swal from "sweetalert2";
+import { AppAlert } from "../appAlert";
 import { getRequest } from "../service/apiService";
 import { ENDPOINTS, getApiUrl } from "../config/apiConfig";
 
@@ -195,15 +195,15 @@ export const Profile = () => {
 
     const handleSave = async () => {
         if (!profile?.id) {
-            Swal.fire({ icon: "error", title: "User id nahi mili", text: "profile/me response mein user_id check karo" });
+            AppAlert.fire({ icon: "error", title: "User id nahi mili", text: "profile/me response mein user_id check karo" });
             return;
         }
         if (!form.firstName.trim()) {
-            Swal.fire({ icon: "warning", title: "First name zaroori hai" });
+            AppAlert.fire({ icon: "warning", title: "First name zaroori hai" });
             return;
         }
         if (form.mobile && !/^\d{10}$/.test(form.mobile.trim())) {
-            Swal.fire({ icon: "warning", title: "Mobile number 10 digits ka hona chahiye" });
+            AppAlert.fire({ icon: "warning", title: "Mobile number 10 digits ka hona chahiye" });
             return;
         }
 
@@ -225,14 +225,18 @@ export const Profile = () => {
             setProfile((prev) => ({ ...prev, ...mapped, photo: mapped.photo || prev?.photo }));
             setForm((prev) => ({ ...profileToForm(mapped), roleId: prev.roleId }));
             setEditProfile(false);
-            Swal.fire({ icon: "success", title: "Profile updated successfully", timer: 1800, showConfirmButton: false });
+            AppAlert.fire({
+                icon: "success",
+                title: "Profile updated successfully",
+                text: "Your changes have been saved.",
+            });
         } catch (err) {
             console.error("Profile update failed:", err);
             const detail = err.response?.detail;
             const msg = Array.isArray(detail)
                 ? detail.map((d) => `${d.loc?.slice(1).join(".")}: ${d.msg}`).join("\n")
                 : err.message;
-            Swal.fire({ icon: "error", title: "Could not update profile", text: msg || "Unable to connect to the server" });
+            AppAlert.fire({ icon: "error", title: "Could not update profile", text: msg || "Unable to connect to the server" });
         } finally {
             setSaving(false);
         }

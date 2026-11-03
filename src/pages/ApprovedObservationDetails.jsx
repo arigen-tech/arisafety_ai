@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { TitleBar } from '../components/UI/TitleBar'
 import { getImageRequest, getRequest } from '../service/apiService'
 import { ENDPOINTS } from '../config/apiConfig'
+import { AppAlert } from '../appAlert'
 
 const pick = (object, keys, fallback = '') => {
     for (const key of keys) {
@@ -81,7 +82,7 @@ export const ApprovedObservationDetails = () => {
             })
         } catch (requestError) {
             console.error('Approved observation evidence could not be loaded:', requestError)
-            window.alert('The evidence file could not be opened.')
+            AppAlert.fire({ icon: 'error', title: 'Could not open evidence', text: 'The evidence file could not be opened.' })
         }
     }
 

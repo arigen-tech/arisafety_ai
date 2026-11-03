@@ -139,7 +139,7 @@ const router = createBrowserRouter([
         element: <ApprovedObservationDetails />,
       },
       {
-        path: "/rejected-observation-details",
+        path: "/rejected-observation-details/:id",
         element: <RejecedObservationDetails />,
       },
       {

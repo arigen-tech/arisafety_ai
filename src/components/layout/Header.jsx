@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { FaRegUserCircle } from 'react-icons/fa'
 import { FaEarthAmericas } from 'react-icons/fa6'
 import { PiUserSwitchFill } from 'react-icons/pi'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { AppAlert } from '../../appAlert'
 import { getRequest, postRequest } from '../../service/apiService' 
 import { ENDPOINTS } from '../../config/apiConfig'
 import { clearAuthSession } from '../../service/authService'
@@ -46,6 +47,7 @@ export const Header = ({
   isTranslating,
   translationError,
 }) => {
+  const navigate = useNavigate()
   const [roles, setRoles] = useState([])
   const [rolesLoading, setRolesLoading] = useState(true)
   const [rolesError, setRolesError] = useState('')
@@ -128,6 +130,24 @@ export const Header = ({
   }
 
   const displayName = selectedRoleName || 'User'
+
+  const handleLogout = async (event) => {
+    event.preventDefault()
+    const result = await AppAlert.fire({
+      icon: 'warning',
+      title: 'Log out?',
+      text: 'Are you sure you want to log out of your account?',
+      showCancelButton: true,
+      confirmButtonText: 'Log out',
+      cancelButtonText: 'Stay signed in',
+      reverseButtons: true,
+    })
+
+    if (!result.isConfirmed) return
+
+    clearAuthSession()
+    navigate('/', { replace: true })
+  }
 
   return (
     <>
@@ -281,7 +301,7 @@ export const Header = ({
                   </Link>
                   <Link
                     to="/"
-                    onClick={clearAuthSession}
+                    onClick={handleLogout}
                   >
                     <img src="images/icons/logout-icon.svg" alt="logout icon" />
                     <span>Logout</span>

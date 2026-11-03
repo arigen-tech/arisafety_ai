@@ -100,6 +100,7 @@ export const Rejected = () => {
 
                             {!loading && !error && rows.map((r, i) => {
                                 const obsId = pick(r, ['observation_id', 'observationId', 'id'])
+                                const dbId = pick(r, ['id'], obsId)
                                 const code = pick(r, ['observation_code', 'observation_no', 'observationCode'], obsId)
                                 const [plant, risk, reportedBy, status] = translatedRows[i] || getRejectedDisplayValues(r)
                                 return (
@@ -113,7 +114,7 @@ export const Rejected = () => {
                                         <td>
                                             <div className="items-center">
                                                 <Link
-                                                    to={`/rejected-observation-details/${obsId}`}
+                                                    to={`/rejected-observation-details/${encodeURIComponent(dbId)}`}
                                                     className="btn-view"
                                                     title="View"
                                                 >

@@ -4,6 +4,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { getRequest, postRequest, patchRequest, getImageRequest } from '../service/apiService'
 import { useTranslatedApiValues } from '../hooks/useTranslatedApiValues'
 import { ENDPOINTS } from '../config/apiConfig'
+import { AppAlert } from '../appAlert'
 const getTodayDate = () => {
     const date = new Date()
     date.setMinutes(date.getMinutes() - date.getTimezoneOffset())
@@ -120,15 +121,14 @@ export const ObservationDetails = () => {
     const activeRoleName = localStorage.getItem('selectedRoleName') || user.role_name || (typeof user.role === 'string' ? user.role : '')
 
     const [aISuggestions] = useState(false);
-    const [formSubmit, setFormSubmit] = useState(false);
     const [formReject, setFormReject] = useState(false);
     const [isTeamLead, setIsTeamLead] = useState(false);
+    const [isEmployee, setIsEmployee] = useState(false);
     const [isFieldOfficer, setIsFieldOfficer] = useState(
         String(activeRoleName).toLowerCase().replace(/[^a-z]/g, '') === 'fieldofficer'
     );
     const [roleResolved, setRoleResolved] = useState(false);
     const [rejectionComments, setRejectionComments] = useState('');
-    const [successMessage, setSuccessMessage] = useState('');
 
     const [departments, setDepartments] = useState([]);
     const [departmentsLoading, setDepartmentsLoading] = useState(true);
@@ -147,13 +147,8 @@ export const ObservationDetails = () => {
     const [beforeImages, setBeforeImages] = useState([]);
     const [afterImages, setAfterImages] = useState([]);
     const [submissionRemarks, setSubmissionRemarks] = useState('');
-    const [aiResult, setAiResult] = useState(null);
     const [aiSuggestionText, setAiSuggestionText] = useState('');
     const [analyzing, setAnalyzing] = useState(false);
-    const [chatMessage, setChatMessage] = useState('');
-    const [chatMessages, setChatMessages] = useState([]);
-    const [chatLoading, setChatLoading] = useState(false);
-    const [chatError, setChatError] = useState('');
     const [capa, setCapa] = useState(() => ({
         correctiveAction: '',
         preventiveAction: '',
@@ -237,9 +232,10 @@ export const ObservationDetails = () => {
             }
 
             const activeRoleId = localStorage.getItem('selectedRoleId') || String(user.role_id ?? '')
-            const storedRoleName = localStorage.getItem('selectedRoleName') || user.role_name || ''
+            const storedRoleName = localStorage.getItem('selectedRoleName') || user.role_name || (typeof user.role === 'string' ? user.role : '')
             const matchesTeamLead = (name) => String(name).replace(/[\s_-]/g, '').toLowerCase() === 'teamlead'
             const matchesFieldOfficer = (name) => String(name).replace(/[\s_-]/g, '').toLowerCase() === 'fieldofficer'
+            const matchesEmployee = (name) => String(name).replace(/[^a-z]/gi, '').toLowerCase().includes('employee')
 
             try {
                 if (activeRoleId) {
@@ -249,16 +245,19 @@ export const ObservationDetails = () => {
                         const roleName = activeRole?.role_name || storedRoleName
                         setIsTeamLead(matchesTeamLead(roleName))
                         setIsFieldOfficer(matchesFieldOfficer(roleName))
+                        setIsEmployee(matchesEmployee(roleName))
                     }
                 } else if (!ignore) {
                     setIsTeamLead(matchesTeamLead(storedRoleName))
                     setIsFieldOfficer(matchesFieldOfficer(storedRoleName))
+                    setIsEmployee(matchesEmployee(storedRoleName))
                 }
             } catch (error) {
                 console.error('Active role could not be resolved:', error)
                 if (!ignore) {
                     setIsTeamLead(matchesTeamLead(storedRoleName))
                     setIsFieldOfficer(matchesFieldOfficer(storedRoleName))
+                    setIsEmployee(matchesEmployee(storedRoleName))
                 }
             } finally {
                 if (!ignore) setRoleResolved(true)
@@ -334,7 +333,7 @@ export const ObservationDetails = () => {
             })
         } catch (err) {
             console.error('Evidence load failed:', err)
-            alert('The evidence file could not be opened.')
+            AppAlert.fire({ icon: 'error', title: 'Could not open evidence', text: 'The evidence file could not be opened.' })
         }
     }
 
@@ -448,7 +447,7 @@ export const ObservationDetails = () => {
     const handleFormSubmit = async () => {
         if (isFieldOfficer) {
             if (!observationId) {
-                alert('The observation ID could not be found.')
+                AppAlert.fire({ icon: 'error', title: 'Observation not found', text: 'The observation ID could not be found.' })
                 return
             }
 
@@ -472,11 +471,15 @@ export const ObservationDetails = () => {
                     setDetailObservation(submittedObservation)
                 }
                 setFieldSubmissionComplete(true)
-                setSuccessMessage('Observation submitted successfully.')
-                setFormSubmit(true)
+                await AppAlert.fire({
+                    icon: 'success',
+                    title: 'Observation submitted successfully',
+                    text: 'Your before and after evidence has been submitted.',
+                })
+                navigate(-1)
             } catch (error) {
                 console.error('Field observation submission failed:', error)
-                alert(error.message || 'The field observation could not be submitted.')
+                AppAlert.fire({ icon: 'error', title: 'Could not submit observation', text: error.message || 'The field observation could not be submitted.' })
             } finally {
                 setLoading(false)
             }
@@ -487,15 +490,15 @@ export const ObservationDetails = () => {
         const responsiblePersonId = Number(capa.responsiblePerson)
 
         if (!observationId) {
-            alert('The observation ID could not be found.')
+            AppAlert.fire({ icon: 'error', title: 'Observation not found', text: 'The observation ID could not be found.' })
             return
         }
         if (!Number.isInteger(selectedDepartment) || selectedDepartment <= 0) {
-            alert('Please select a department.')
+            AppAlert.fire({ icon: 'warning', title: 'Department required', text: 'Please select a department.' })
             return
         }
         if (!Number.isInteger(responsiblePersonId) || responsiblePersonId <= 0) {
-            alert('Please select a responsible person.')
+            AppAlert.fire({ icon: 'warning', title: 'Responsible person required', text: 'Please select a responsible person.' })
             return
         }
 
@@ -543,19 +546,25 @@ export const ObservationDetails = () => {
                 }
             )
 
-            setAiResult({
-                observationId: assignResult?.observation_id ?? updateResult?.observation_id ?? observationId,
-                riskLevel: assignResult?.risk_level ?? updateResult?.risk_level ?? v.risk,
+            const assignedObservationId = assignResult?.observation_id ?? updateResult?.observation_id ?? observationId
+            const assignedRiskLevel = assignResult?.risk_level ?? updateResult?.risk_level ?? v.risk
+            await AppAlert.fire({
+                icon: 'success',
+                title: 'Observation successfully assigned',
+                text: `ID: ${assignedObservationId} | Risk: ${assignedRiskLevel}`,
             })
-            setSuccessMessage('Observation successfully assigned.')
-            setFormSubmit(true)
+            navigate(-1)
         } catch (err) {
             console.error(updateSucceeded ? 'Observation assignment failed after updating:' : 'Observation update failed:', err)
             const detail = err?.response?.detail
             const message = typeof detail === 'string' ? detail : err?.message
-            alert(updateSucceeded
-                ? `Observation details were updated, but assignment failed. ${message || 'Please retry assignment.'}`
-                : `The observation could not be updated. ${message || 'Please try again.'}`)
+            AppAlert.fire({
+                icon: 'error',
+                title: updateSucceeded ? 'Assignment failed' : 'Could not update observation',
+                text: updateSucceeded
+                    ? `Observation details were updated, but assignment failed. ${message || 'Please retry assignment.'}`
+                    : `The observation could not be updated. ${message || 'Please try again.'}`,
+            })
         } finally {
             setLoading(false)
         }
@@ -572,15 +581,15 @@ export const ObservationDetails = () => {
         const selectedDepartment = Number(selectedDepartmentId)
 
         if (!observationId) {
-            alert('The observation ID could not be found.')
+            AppAlert.fire({ icon: 'error', title: 'Observation not found', text: 'The observation ID could not be found.' })
             return
         }
         if (!Number.isInteger(responsiblePersonId) || responsiblePersonId <= 0) {
-            alert('Please select a responsible person.')
+            AppAlert.fire({ icon: 'warning', title: 'Responsible person required', text: 'Please select a responsible person.' })
             return
         }
         if (!Number.isInteger(selectedDepartment) || selectedDepartment <= 0) {
-            alert('Please select a department.')
+            AppAlert.fire({ icon: 'warning', title: 'Department required', text: 'Please select a department.' })
             return
         }
 
@@ -604,20 +613,15 @@ export const ObservationDetails = () => {
             }))
         } catch (err) {
             console.error('CAPA recommendation request failed:', err)
-            alert('A CAPA recommendation could not be generated. Please try again.')
+            AppAlert.fire({ icon: 'error', title: 'Could not generate recommendation', text: 'A CAPA recommendation could not be generated. Please try again.' })
         } finally {
             setAnalyzing(false)
         }
     }
 
-    const handleFormClose = () => {
-        setFormSubmit(false);
-        navigate(-1);
-    }
-
     const handleTeamLeadDecision = async (decision, comments = '') => {
         if (!observationId) {
-            alert('The observation ID could not be found.')
+            AppAlert.fire({ icon: 'error', title: 'Observation not found', text: 'The observation ID could not be found.' })
             return
         }
 
@@ -632,53 +636,38 @@ export const ObservationDetails = () => {
                 ?? response?.data
                 ?? response
             setDetailObservation(decidedObservation)
-            setSuccessMessage(decision === 'APPROVED'
-                ? 'Observation approved successfully.'
-                : 'Observation rejected successfully.')
             setFormReject(false)
-            setFormSubmit(true)
+            const rejected = decision === 'REJECTED'
+            const result = await AppAlert.fire({
+                icon: rejected ? 'error' : 'success',
+                title: rejected ? 'Application has been rejected' : 'Observation approved',
+                text: rejected
+                    ? 'This observation is now listed in Rejected.'
+                    : 'The observation decision has been recorded successfully.',
+                confirmButtonText: rejected ? 'View rejected observations' : 'Done',
+            })
+            if (rejected && result.isConfirmed) navigate('/rejected', { replace: true })
         } catch (error) {
             console.error(`Observation ${decision.toLowerCase()} decision failed:`, error)
             const detail = error?.response?.detail
-            alert(typeof detail === 'string'
-                ? detail
-                : error?.message || 'The observation decision could not be saved. Please try again.')
+            AppAlert.fire({
+                icon: 'error',
+                title: 'Could not save decision',
+                text: typeof detail === 'string'
+                    ? detail
+                    : error?.message || 'The observation decision could not be saved. Please try again.',
+            })
         } finally {
             setLoading(false)
         }
     }
 
     const handleFormRejection = () => {
-        if (teamLeadReviewReady) {
-            setRejectionComments('')
-        }
+        setRejectionComments('')
         setFormReject(true);
     }
     const handleFormRejectionClose = () => {
         setFormReject(false);
-    }
-
-    const handleSafetyChatSubmit = async (event) => {
-        event.preventDefault()
-        const message = chatMessage.trim()
-        if (!message || message.length > 4000 || chatLoading) return
-
-        setChatMessages((previous) => [...previous, { role: 'user', content: message }])
-        setChatMessage('')
-        setChatError('')
-        setChatLoading(true)
-        try {
-            const result = await postRequest(ENDPOINTS.CHAT, { message })
-            if (typeof result?.response !== 'string' || !result.response.trim()) {
-                throw new Error('The safety assistant returned an invalid response.')
-            }
-            setChatMessages((previous) => [...previous, { role: 'assistant', content: result.response }])
-        } catch (error) {
-            console.error('Safety chat request failed:', error)
-            setChatError(error.message || 'The chat request failed. Please try again.')
-        } finally {
-            setChatLoading(false)
-        }
     }
 
     return (
@@ -868,45 +857,7 @@ export const ObservationDetails = () => {
                 </div>
             </div>
 
-            <div className="card mb-20">
-                <h3 className='mb-10'>Safety Chatbot</h3>
-                <div role="log" aria-live="polite" aria-label="Chat messages">
-                    {chatMessages.length === 0 && <p>Ask a workplace safety question to get started.</p>}
-                    {chatMessages.map((chat, index) => (
-                        <div className="form-group" key={`${chat.role}-${index}`}>
-                            <strong>{chat.role === 'user' ? 'You' : 'Safety Assistant'}</strong>
-                            <p style={{ whiteSpace: 'pre-wrap' }}>{chat.content}</p>
-                        </div>
-                    ))}
-                    {chatLoading && <p role="status">Getting an answer...</p>}
-                </div>
-                {chatError && <p role="alert">{chatError}</p>}
-                <form className="grid grid-col-1" onSubmit={handleSafetyChatSubmit}>
-                    <div className="form-group">
-                        <label htmlFor="safety-chat-message">Message</label>
-                        <textarea
-                            id="safety-chat-message"
-                            rows={3}
-                            maxLength={4000}
-                            value={chatMessage}
-                            onChange={(event) => setChatMessage(event.target.value)}
-                            placeholder="What should I do if I find damaged safety equipment?"
-                        />
-                        <small>{chatMessage.length}/4000 characters</small>
-                    </div>
-                    <div className="d-flex">
-                        <button
-                            type="submit"
-                            className="btn btn-primary"
-                            disabled={chatLoading || !chatMessage.trim()}
-                        >
-                            {chatLoading ? 'Sending...' : 'Send'}
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <div className="card mb-20">
+            {roleResolved && !isEmployee && <div className="card mb-20">
                 {(isFieldOfficer || teamLeadReviewReady) ? (
                     <>
                         <h3 className='mb-10'>
@@ -1050,7 +1001,7 @@ export const ObservationDetails = () => {
                     </div>
                 </div>}
                 </>}
-            </div>
+            </div>}
 
             {roleResolved && (isFieldOfficer || isTeamLead) && isFieldSubmissionComplete && (
                 <div className="card mb-20">
@@ -1089,7 +1040,7 @@ export const ObservationDetails = () => {
                 </div>
             )}
 
-            {roleResolved && isFieldOfficer && !isFieldSubmissionComplete && (
+            {roleResolved && isFieldOfficer && !isEmployee && !isFieldSubmissionComplete && (
                 <div className="card mb-20">
                     <h3 className='mb-10'>Upload Before &amp; After Evidence</h3>
 
@@ -1110,7 +1061,7 @@ export const ObservationDetails = () => {
                 </div>
             )}
 
-            <div className="d-flex">
+            {roleResolved && !isEmployee && <div className="d-flex">
                 {teamLeadReviewReady ? (
                     <>
                         <button
@@ -1143,7 +1094,7 @@ export const ObservationDetails = () => {
                         {!isFieldOfficer && <button type="button" className="btn btn-rejected" onClick={handleFormRejection}>Reject</button>}
                     </>
                 )}
-            </div>
+            </div>}
 
             {/* Evidence preview popup */}
             {preview && <div className="modalBackdrop">
@@ -1158,19 +1109,6 @@ export const ObservationDetails = () => {
                         {preview.type === 'VIDEO'
                             ? <video src={preview.url} controls autoPlay style={{ maxWidth: '100%' }} />
                             : <img src={preview.url} alt={preview.name} style={{ maxWidth: '100%' }} />}
-                    </div>
-                </div>
-            </div>}
-
-            {formSubmit && <div className="modalBackdrop">
-                <div className="popupModal ms-model">
-                    <div className="modalBody">
-                        <div className='checkMark'>
-                            <img src="images/icons/check-mark-success-large.gif" alt="Check icon" />
-                            <p className='text-center'>{successMessage || (isFieldOfficer ? 'Observation successfully submitted.' : 'Observation successfully assigned.')}</p>
-                            {aiResult && <p className='text-center'>ID: {aiResult.observationId} | Risk: {aiResult.riskLevel}</p>}
-                            <button className='btn btn-primary' onClick={handleFormClose}>OK</button>
-                        </div>
                     </div>
                 </div>
             </div>}
@@ -1199,9 +1137,7 @@ export const ObservationDetails = () => {
                         <button className='btn btn-gray' onClick={handleFormRejectionClose}>Cancel</button>
                         <button
                             className='btn btn-primary'
-                            onClick={() => teamLeadReviewReady
-                                ? handleTeamLeadDecision('REJECTED', rejectionComments)
-                                : handleFormRejectionClose()}
+                            onClick={() => handleTeamLeadDecision('REJECTED', rejectionComments)}
                             disabled={loading}
                         >
                             {loading ? 'Please wait...' : 'Submit'}
