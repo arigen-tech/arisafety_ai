@@ -1,4 +1,6 @@
-export const API_HOST = "http://103.133.215.182:8951";
+// export const API_HOST = "http://103.133.215.182:8951";
+// export const API_HOST = "http://localhost:8951";
+export const API_HOST = "http://192.168.1.200:8951";
 export const DEFAULT_RSA_PUBLIC_KEY ="MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAocY0eeeK1s9dAqEBsrN1bg+G4Ux4uTDq2mdlMAoQ14N+ME9Sd4+CYk9iF86InOTJ9e2n9w0L8vEWSku3oAzNRYBzHp46oBJuUhFAC3sJ0Xwkfz96cW9HkS+YrEoPy716J2rDAaedjgeSsLOL6QwitGGKyy8g1jUKOCZV26iQOSKbU1S9QjKO8NnAyoExVFDqrNXy8j3HnHB0NXSYjNJk6Sv/zMkijotHKp+u4NNxBnP69uEoMfLPmDslErh9uDzc4nrKYm94RbzJ/JxhRl3gXV/sXNhHSpSA0rA/5w66uh6JZYq0G+0FbnHwBUBgOIoLVQ8Zg+Di3zqF3nEMLJKYwwIDAQAB";
 
 export const getApiUrl = (endpoint) => {
